@@ -11,7 +11,9 @@ pipeline {
     environment {
         DOCKER_REGISTRY = 'registry.travelplan.com'
         DOCKER_CREDENTIALS_ID = 'docker-registry-creds'
-        SONARQUBE_SERVER = 'SonarQube'
+        SONARQUBE_SERVER = 'SonarCloud'
+        SONAR_PROJECT_KEY = 'travel-plan'
+        SONAR_ORGANIZATION = 'travel-plan-org'
         MAVEN_OPTS = '-Xmx2048m'
         JAVA_HOME = tool 'JDK17'
         PATH = "${JAVA_HOME}/bin:${PATH}"
@@ -48,17 +50,22 @@ pipeline {
             }
         }
         
-        stage('SonarQube Analysis') {
+        stage('SonarCloud Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh '''
-                        ./mvnw sonar:sonar \
-                            -Dsonar.projectKey=travel-plan \
-                            -Dsonar.projectName="Travel Plan" \
-                            -Dsonar.java.coveragePlugin=jacoco \
-                            -Dsonar.coverage.jacoco.xmlReportPaths=**/target/site/jacoco/jacoco.xml \
-                            -Dsonar.qualitygate.wait=true
-                    '''
+                withCredentials([string(credentialsId: 'sonarcloud-token', variable: 'SONAR_TOKEN')]) {
+                    withSonarQubeEnv("${SONARQUBE_SERVER}") {
+                        sh '''
+                            ./mvnw sonar:sonar \
+                                -Dsonar.host.url=https://sonarcloud.io \
+                                -Dsonar.token=${SONAR_TOKEN} \
+                                -Dsonar.organization=${SONAR_ORGANIZATION} \
+                                -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                                -Dsonar.projectName="Travel Plan" \
+                                -Dsonar.java.coveragePlugin=jacoco \
+                                -Dsonar.coverage.jacoco.xmlReportPaths=**/target/site/jacoco/jacoco.xml \
+                                -Dsonar.qualitygate.wait=true
+                        '''
+                    }
                 }
             }
         }
