@@ -40,8 +40,8 @@ pipeline {
                         bat '''
                             set "JAVA_HOME=%JDK17_WINDOWS_HOME%"
                             set "PATH=%JAVA_HOME%\\bin;%PATH%"
-                            mvnw.cmd -v
-                            mvnw.cmd clean package -DskipTests=false -Dmaven.test.failure.ignore=false
+                            call mvnw.cmd -v
+                            call mvnw.cmd clean package -DskipTests=false -Dmaven.test.failure.ignore=false
                         '''
                     }
                 }
@@ -75,8 +75,8 @@ pipeline {
                                 bat '''
                                     set "JAVA_HOME=%JDK17_WINDOWS_HOME%"
                                     set "PATH=%JAVA_HOME%\\bin;%PATH%"
-                                    mvnw.cmd -v
-                                    mvnw.cmd sonar:sonar ^
+                                    call mvnw.cmd -v
+                                    call mvnw.cmd sonar:sonar ^
                                         -Dsonar.host.url=https://sonarcloud.io ^
                                         -Dsonar.token=%SONAR_TOKEN% ^
                                         -Dsonar.organization=%SONAR_ORGANIZATION% ^
@@ -93,13 +93,7 @@ pipeline {
             }
         }
         
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 10, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
-            }
-        }
+        // Quality Gate is handled by -Dsonar.qualitygate.wait=true in the SonarCloud Analysis stage
         
         stage('Build Docker Images') {
             when {
@@ -181,8 +175,8 @@ pipeline {
                         bat '''
                             set "JAVA_HOME=%JDK17_WINDOWS_HOME%"
                             set "PATH=%JAVA_HOME%\\bin;%PATH%"
-                            mvnw.cmd -v
-                            mvnw.cmd verify -Pintegration-tests -Dtest.environment=staging
+                            call mvnw.cmd -v
+                            call mvnw.cmd verify -Pintegration-tests -Dtest.environment=staging
                         '''
                     }
                 }
