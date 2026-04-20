@@ -14,6 +14,7 @@ pipeline {
         SONARQUBE_SERVER = 'SonarCloud'
         SONAR_PROJECT_KEY = 'Yssnogood_travel-plan'
         SONAR_ORGANIZATION = 'travel-plan-org'
+        JDK17_WINDOWS_HOME = 'C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.18.8-hotspot'
         MAVEN_OPTS = '-Xmx2048m'
     }
     
@@ -36,13 +37,18 @@ pipeline {
                     if (isUnix()) {
                         sh './mvnw clean package -DskipTests=false -Dmaven.test.failure.ignore=false'
                     } else {
-                        bat 'mvnw.cmd clean package -DskipTests=false -Dmaven.test.failure.ignore=false'
+                        bat '''
+                            set "JAVA_HOME=%JDK17_WINDOWS_HOME%"
+                            set "PATH=%JAVA_HOME%\\bin;%PATH%"
+                            mvnw.cmd -v
+                            mvnw.cmd clean package -DskipTests=false -Dmaven.test.failure.ignore=false
+                        '''
                     }
                 }
             }
             post {
                 always {
-                    junit '**/target/surefire-reports/*.xml'
+                    junit testResults: '**/target/surefire-reports/*.xml', allowEmptyResults: true
                     jacoco path: '**/target/jacoco.exec'
                 }
             }
@@ -67,6 +73,9 @@ pipeline {
                                 '''
                             } else {
                                 bat '''
+                                    set "JAVA_HOME=%JDK17_WINDOWS_HOME%"
+                                    set "PATH=%JAVA_HOME%\\bin;%PATH%"
+                                    mvnw.cmd -v
                                     mvnw.cmd sonar:sonar ^
                                         -Dsonar.host.url=https://sonarcloud.io ^
                                         -Dsonar.token=%SONAR_TOKEN% ^
@@ -169,7 +178,12 @@ pipeline {
                     if (isUnix()) {
                         sh './mvnw verify -Pintegration-tests -Dtest.environment=staging'
                     } else {
-                        bat 'mvnw.cmd verify -Pintegration-tests -Dtest.environment=staging'
+                        bat '''
+                            set "JAVA_HOME=%JDK17_WINDOWS_HOME%"
+                            set "PATH=%JAVA_HOME%\\bin;%PATH%"
+                            mvnw.cmd -v
+                            mvnw.cmd verify -Pintegration-tests -Dtest.environment=staging
+                        '''
                     }
                 }
             }
