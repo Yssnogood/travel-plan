@@ -5,7 +5,6 @@ services:
   # API Gateway (Kong)
   api-gateway:
     image: kong:3.4-alpine
-    container_name: travel-api-gateway
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /kong/declarative/kong.yml
@@ -46,7 +45,6 @@ services:
       context: ../services/auth-service
       dockerfile: Dockerfile
     image: travel-plan/auth-service:latest
-    container_name: travel-auth-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-primary:5432/travel_db
@@ -79,7 +77,6 @@ services:
       context: ../services/user-service
       dockerfile: Dockerfile
     image: travel-plan/user-service:latest
-    container_name: travel-user-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-primary:5432/travel_db
@@ -114,7 +111,6 @@ services:
       context: ../services/travel-service
       dockerfile: Dockerfile
     image: travel-plan/travel-service:latest
-    container_name: travel-travel-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-primary:5432/travel_db
@@ -152,7 +148,6 @@ services:
       context: ../services/payment-service
       dockerfile: Dockerfile
     image: travel-plan/payment-service:latest
-    container_name: travel-payment-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-primary:5432/travel_db
@@ -190,7 +185,6 @@ services:
       context: ../services/notification-service
       dockerfile: Dockerfile
     image: travel-plan/notification-service:latest
-    container_name: travel-notification-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_RABBITMQ_HOST: rabbitmq
@@ -224,7 +218,6 @@ services:
       context: ../admin-dashboard
       dockerfile: Dockerfile
     image: travel-plan/admin-dashboard:latest
-    container_name: travel-admin-dashboard
     ports:
       - "3000:80"
     networks:
