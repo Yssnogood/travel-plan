@@ -12,7 +12,7 @@ pipeline {
         DOCKER_REGISTRY = 'registry.travelplan.com'
         DOCKER_CREDENTIALS_ID = 'docker-registry-creds'
         SONARQUBE_SERVER = 'SonarCloud'
-        SONAR_PROJECT_KEY = 'travel-plan'
+        SONAR_PROJECT_KEY = 'Yssnogood_travel-plan'
         SONAR_ORGANIZATION = 'travel-plan-org'
         MAVEN_OPTS = '-Xmx2048m'
         JAVA_HOME = tool 'JDK17'
