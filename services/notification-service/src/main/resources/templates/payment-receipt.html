@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reçu de paiement</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            color: #1976d2;
+        }
+        .success-badge {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            padding: 10px 20px;
+            border-radius: 20px;
+            display: inline-block;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        h1 {
+            color: #2e7d32;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .receipt-box {
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+        }
+        .receipt-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .receipt-row:last-child {
+            border-bottom: none;
+        }
+        .receipt-label {
+            color: #666;
+            font-size: 14px;
+        }
+        .receipt-value {
+            font-weight: 600;
+            color: #333;
+        }
+        .amount-row {
+            background-color: #e3f2fd;
+            margin: 0 -25px;
+            padding: 15px 25px;
+            border-radius: 0 0 12px 12px;
+        }
+        .amount-value {
+            font-size: 24px;
+            color: #1976d2;
+            font-weight: bold;
+        }
+        .transaction-id {
+            font-family: monospace;
+            background-color: #f5f5f5;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #888;
+            font-size: 14px;
+        }
+        .support-link {
+            color: #1976d2;
+            text-decoration: none;
+        }
+        .icon {
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">✈️ Travel Plan</div>
+        </div>
+        
+        <div class="icon">✅</div>
+        
+        <h1 style="text-align: center;">Paiement confirmé</h1>
+        
+        <p style="text-align: center;">
+            <span class="success-badge">🎉 Transaction réussie</span>
+        </p>
+        
+        <div class="content">
+            <p>Bonjour <strong th:text="${userName}">Utilisateur</strong>,</p>
+            
+            <p>Merci pour votre paiement ! Voici le récapitulatif de votre transaction :</p>
+            
+            <div class="receipt-box">
+                <div class="receipt-row">
+                    <span class="receipt-label">ID de transaction</span>
+                    <span class="receipt-value transaction-id" th:text="${transactionId}">TXN-XXXXX</span>
+                </div>
+                <div class="receipt-row">
+                    <span class="receipt-label">Date</span>
+                    <span class="receipt-value" th:text="${#dates.format(#dates.createNow(), 'dd/MM/yyyy HH:mm')}">01/01/2024</span>
+                </div>
+                <div class="receipt-row">
+                    <span class="receipt-label">Méthode de paiement</span>
+                    <span class="receipt-value">💳 Carte bancaire</span>
+                </div>
+                <div class="receipt-row amount-row">
+                    <span class="receipt-label">Montant payé</span>
+                    <span class="amount-value" th:text="${amount}">0.00 €</span>
+                </div>
+            </div>
+            
+            <p>Ce reçu vous a été envoyé automatiquement suite à la confirmation de votre paiement.</p>
+            
+            <p>Conservez cet email comme preuve de votre transaction. Vous pouvez également accéder à l'historique de vos paiements depuis votre espace personnel.</p>
+        </div>
+        
+        <div class="footer">
+            <p>Une question ? Contactez notre <a href="mailto:support@travelplan.com" class="support-link">service client</a></p>
+            <p>© 2024 Travel Plan. Tous droits réservés.</p>
+            <p style="font-size: 12px; color: #999;">
+                Ce document fait office de reçu de paiement. Aucune signature n'est requise.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

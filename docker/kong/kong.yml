@@ -1,0 +1,251 @@
+_format_version: "3.0"
+_transform: true
+
+# Kong API Gateway Configuration
+services:
+  # Auth Service
+  - name: auth-service
+    url: http://auth-service:8081
+    routes:
+      - name: auth-routes
+        paths:
+          - /api/v1/auth
+        strip_path: false
+        methods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Accept-Version
+            - Content-Length
+            - Content-MD5
+            - Content-Type
+            - Date
+            - Authorization
+            - X-Request-ID
+            - X-Correlation-ID
+          credentials: true
+          max_age: 3600
+      - name: rate-limiting
+        config:
+          minute: 100
+          hour: 1000
+          policy: local
+
+  # User Service
+  - name: user-service
+    url: http://user-service:8082
+    routes:
+      - name: user-routes
+        paths:
+          - /api/v1/users
+        strip_path: false
+        methods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: kid
+          claims_to_verify:
+            - exp
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Authorization
+            - Content-Type
+            - X-Request-ID
+            - X-Correlation-ID
+          credentials: true
+      - name: rate-limiting
+        config:
+          minute: 60
+          hour: 500
+          policy: local
+
+  # Travel Service
+  - name: travel-service
+    url: http://travel-service:8083
+    routes:
+      - name: travel-routes
+        paths:
+          - /api/v1/travels
+          - /api/v1/destinations
+          - /api/v1/activities
+          - /api/v1/accommodations
+          - /api/v1/transportations
+        strip_path: false
+        methods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: kid
+          claims_to_verify:
+            - exp
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Authorization
+            - Content-Type
+            - X-Request-ID
+            - X-Correlation-ID
+          credentials: true
+      - name: rate-limiting
+        config:
+          minute: 60
+          hour: 500
+          policy: local
+
+  # Payment Service
+  - name: payment-service
+    url: http://payment-service:8084
+    routes:
+      - name: payment-routes
+        paths:
+          - /api/v1/payments
+          - /api/v1/payment-methods
+        strip_path: false
+        methods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: kid
+          claims_to_verify:
+            - exp
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Authorization
+            - Content-Type
+            - X-Request-ID
+            - X-Correlation-ID
+          credentials: true
+      - name: rate-limiting
+        config:
+          minute: 30
+          hour: 200
+          policy: local
+
+  # Notification Service
+  - name: notification-service
+    url: http://notification-service:8085
+    routes:
+      - name: notification-routes
+        paths:
+          - /api/v1/notifications
+        strip_path: false
+        methods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: kid
+          claims_to_verify:
+            - exp
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Authorization
+            - Content-Type
+            - X-Request-ID
+            - X-Correlation-ID
+          credentials: true
+      - name: rate-limiting
+        config:
+          minute: 30
+          hour: 200
+          policy: local
+
+# Global plugins
+plugins:
+  - name: correlation-id
+    config:
+      header_name: X-Correlation-ID
+      generator: uuid
+      echo_downstream: true
+
+  - name: request-transformer
+    config:
+      add:
+        headers:
+          - "X-Gateway-Time:$(date)"
+
+  - name: response-transformer
+    config:
+      add:
+        headers:
+          - "X-Powered-By:Travel-Plan-Gateway"
+
+# Consumers for JWT
+consumers:
+  - username: admin-user
+    custom_id: admin
+  - username: regular-user
+    custom_id: user

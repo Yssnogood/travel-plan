@@ -1,0 +1,106 @@
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+.factorypath
+*.swp
+*.swo
+*~
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Gradle
+.gradle/
+build/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+.yarn/
+
+# Build outputs
+dist/
+out/
+*.jar
+*.war
+*.ear
+
+# Logs
+logs/
+*.log
+
+# OS generated
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.env
+
+# Secrets and credentials
+*.pem
+*.key
+*.p12
+*.jks
+secrets/
+credentials/
+
+# Docker
+docker/certs/*.crt
+docker/certs/*.key
+
+# Coverage reports
+coverage/
+*.lcov
+jacoco.exec
+
+# Test results
+test-output/
+surefire-reports/
+failsafe-reports/
+
+# Generated sources
+generated-sources/
+generated-test-sources/
+
+# Local configuration
+application-local.yml
+application-local.properties
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Database files
+*.db
+*.sqlite
+*.h2.db
+
+# Cache
+.cache/
+.parcel-cache/

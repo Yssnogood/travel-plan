@@ -1,0 +1,52 @@
+---
+# Production Environment Variables
+environment: production
+
+# Database Configuration
+db_host: db-primary.internal
+db_password: "{{ vault_db_password }}"
+
+# Redis Configuration
+redis_password: "{{ vault_redis_password }}"
+
+# RabbitMQ Configuration
+rabbitmq_user: travel_admin
+rabbitmq_password: "{{ vault_rabbitmq_password }}"
+
+# Kong Configuration
+kong_db_password: "{{ vault_kong_db_password }}"
+
+# Vault Configuration
+vault_root_token: "{{ vault_root_token }}"
+
+# JWT Configuration
+jwt_secret: "{{ vault_jwt_secret }}"
+
+# Neo4j Configuration
+neo4j_host: neo4j.internal
+neo4j_password: "{{ vault_neo4j_password }}"
+
+# Stripe Configuration
+stripe_api_key: "{{ vault_stripe_api_key }}"
+stripe_webhook_secret: "{{ vault_stripe_webhook_secret }}"
+
+# PayPal Configuration
+paypal_client_id: "{{ vault_paypal_client_id }}"
+paypal_client_secret: "{{ vault_paypal_client_secret }}"
+
+# Mail Configuration
+mail_host: smtp.sendgrid.net
+mail_username: apikey
+mail_password: "{{ vault_sendgrid_api_key }}"
+
+# Docker Configuration
+docker_registry: registry.travelplan.com
+service_version: "{{ lookup('env', 'SERVICE_VERSION') | default('latest', true) }}"
+
+# SSL/TLS Configuration
+ssl_cert_path: /etc/ssl/certs/travelplan.crt
+ssl_key_path: /etc/ssl/private/travelplan.key
+
+# Monitoring
+prometheus_retention: 30d
+grafana_admin_password: "{{ vault_grafana_password }}"

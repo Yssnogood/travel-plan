@@ -1,0 +1,295 @@
+---
+# Deploy All Services Playbook
+- name: Deploy Travel Plan Infrastructure
+  hosts: all
+  become: yes
+  vars_files:
+    - ../vars/{{ environment }}.yml
+  
+  pre_tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+  roles:
+    - role: docker
+      tags: [docker]
+    - role: common
+      tags: [common]
+
+- name: Deploy Database Services
+  hosts: databases
+  become: yes
+  vars_files:
+    - ../vars/{{ environment }}.yml
+  
+  roles:
+    - role: postgresql
+      tags: [database, postgresql]
+    - role: neo4j
+      tags: [database, neo4j]
+
+- name: Deploy Infrastructure Services
+  hosts: production:staging:development
+  become: yes
+  vars_files:
+    - ../vars/{{ environment }}.yml
+  
+  tasks:
+    - name: Deploy Redis
+      docker_container:
+        name: redis
+        image: "redis:7-alpine"
+        state: started
+        restart_policy: unless-stopped
+        command: redis-server --requirepass {{ redis_password }}
+        ports:
+          - "6379:6379"
+        volumes:
+          - redis_data:/data
+        healthcheck:
+          test: ["CMD", "redis-cli", "ping"]
+          interval: 10s
+          timeout: 5s
+          retries: 5
+      tags: [infrastructure, redis]
+
+    - name: Deploy RabbitMQ
+      docker_container:
+        name: rabbitmq
+        image: "rabbitmq:3-management-alpine"
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "5672:5672"
+          - "15672:15672"
+        env:
+          RABBITMQ_DEFAULT_USER: "{{ rabbitmq_user }}"
+          RABBITMQ_DEFAULT_PASS: "{{ rabbitmq_password }}"
+        volumes:
+          - rabbitmq_data:/var/lib/rabbitmq
+        healthcheck:
+          test: ["CMD", "rabbitmq-diagnostics", "ping"]
+          interval: 30s
+          timeout: 10s
+          retries: 5
+      tags: [infrastructure, rabbitmq]
+
+    - name: Deploy Vault
+      docker_container:
+        name: vault
+        image: "hashicorp/vault:1.15"
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "8200:8200"
+        env:
+          VAULT_ADDR: "http://0.0.0.0:8200"
+          VAULT_DEV_ROOT_TOKEN_ID: "{{ vault_root_token }}"
+        cap_add:
+          - IPC_LOCK
+        volumes:
+          - vault_data:/vault/data
+      tags: [infrastructure, vault]
+
+- name: Deploy Kong API Gateway
+  hosts: load_balancers
+  become: yes
+  vars_files:
+    - ../vars/{{ environment }}.yml
+  
+  tasks:
+    - name: Deploy Kong Database
+      docker_container:
+        name: kong-db
+        image: "postgres:15-alpine"
+        state: started
+        restart_policy: unless-stopped
+        env:
+          POSTGRES_USER: kong
+          POSTGRES_PASSWORD: "{{ kong_db_password }}"
+          POSTGRES_DB: kong
+        volumes:
+          - kong_db_data:/var/lib/postgresql/data
+      tags: [gateway, kong]
+
+    - name: Run Kong migrations
+      docker_container:
+        name: kong-migration
+        image: "kong:3.4"
+        state: started
+        auto_remove: yes
+        env:
+          KONG_DATABASE: postgres
+          KONG_PG_HOST: kong-db
+          KONG_PG_USER: kong
+          KONG_PG_PASSWORD: "{{ kong_db_password }}"
+        command: kong migrations bootstrap
+      tags: [gateway, kong]
+
+    - name: Deploy Kong
+      docker_container:
+        name: kong
+        image: "kong:3.4"
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "8000:8000"
+          - "8443:8443"
+          - "8001:8001"
+        env:
+          KONG_DATABASE: postgres
+          KONG_PG_HOST: kong-db
+          KONG_PG_USER: kong
+          KONG_PG_PASSWORD: "{{ kong_db_password }}"
+          KONG_PROXY_ACCESS_LOG: /dev/stdout
+          KONG_ADMIN_ACCESS_LOG: /dev/stdout
+          KONG_PROXY_ERROR_LOG: /dev/stderr
+          KONG_ADMIN_ERROR_LOG: /dev/stderr
+          KONG_ADMIN_LISTEN: "0.0.0.0:8001"
+        healthcheck:
+          test: ["CMD", "kong", "health"]
+          interval: 30s
+          timeout: 10s
+          retries: 3
+      tags: [gateway, kong]
+
+- name: Deploy Microservices
+  hosts: production:staging:development
+  become: yes
+  vars_files:
+    - ../vars/{{ environment }}.yml
+  serial: 1
+  
+  tasks:
+    - name: Pull latest service images
+      docker_image:
+        name: "{{ docker_registry }}/{{ item }}"
+        source: pull
+        tag: "{{ service_version | default('latest') }}"
+      loop:
+        - auth-service
+        - user-service
+        - travel-service
+        - payment-service
+        - notification-service
+      tags: [services]
+
+    - name: Deploy Auth Service
+      docker_container:
+        name: auth-service
+        image: "{{ docker_registry }}/auth-service:{{ service_version | default('latest') }}"
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "8081:8081"
+        env:
+          SPRING_PROFILES_ACTIVE: docker
+          JWT_SECRET: "{{ jwt_secret }}"
+          DB_HOST: "{{ db_host }}"
+          DB_PASSWORD: "{{ db_password }}"
+        healthcheck:
+          test: ["CMD", "wget", "--spider", "-q", "http://localhost:8081/actuator/health"]
+          interval: 30s
+          timeout: 10s
+          retries: 3
+      tags: [services, auth]
+
+    - name: Deploy User Service
+      docker_container:
+        name: user-service
+        image: "{{ docker_registry }}/user-service:{{ service_version | default('latest') }}"
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "8082:8082"
+        env:
+          SPRING_PROFILES_ACTIVE: docker
+          JWT_SECRET: "{{ jwt_secret }}"
+          DB_HOST: "{{ db_host }}"
+          DB_PASSWORD: "{{ db_password }}"
+        healthcheck:
+          test: ["CMD", "wget", "--spider", "-q", "http://localhost:8082/actuator/health"]
+          interval: 30s
+          timeout: 10s
+          retries: 3
+      tags: [services, user]
+
+    - name: Deploy Travel Service
+      docker_container:
+        name: travel-service
+        image: "{{ docker_registry }}/travel-service:{{ service_version | default('latest') }}"
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "8083:8083"
+        env:
+          SPRING_PROFILES_ACTIVE: docker
+          JWT_SECRET: "{{ jwt_secret }}"
+          DB_HOST: "{{ db_host }}"
+          DB_PASSWORD: "{{ db_password }}"
+          NEO4J_HOST: "{{ neo4j_host }}"
+          NEO4J_PASSWORD: "{{ neo4j_password }}"
+        healthcheck:
+          test: ["CMD", "wget", "--spider", "-q", "http://localhost:8083/actuator/health"]
+          interval: 30s
+          timeout: 10s
+          retries: 3
+      tags: [services, travel]
+
+    - name: Deploy Payment Service
+      docker_container:
+        name: payment-service
+        image: "{{ docker_registry }}/payment-service:{{ service_version | default('latest') }}"
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "8084:8084"
+        env:
+          SPRING_PROFILES_ACTIVE: docker
+          JWT_SECRET: "{{ jwt_secret }}"
+          DB_HOST: "{{ db_host }}"
+          DB_PASSWORD: "{{ db_password }}"
+          STRIPE_API_KEY: "{{ stripe_api_key }}"
+          PAYPAL_CLIENT_ID: "{{ paypal_client_id }}"
+          PAYPAL_CLIENT_SECRET: "{{ paypal_client_secret }}"
+        healthcheck:
+          test: ["CMD", "wget", "--spider", "-q", "http://localhost:8084/actuator/health"]
+          interval: 30s
+          timeout: 10s
+          retries: 3
+      tags: [services, payment]
+
+    - name: Deploy Notification Service
+      docker_container:
+        name: notification-service
+        image: "{{ docker_registry }}/notification-service:{{ service_version | default('latest') }}"
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "8085:8085"
+        env:
+          SPRING_PROFILES_ACTIVE: docker
+          MAIL_HOST: "{{ mail_host }}"
+          MAIL_USERNAME: "{{ mail_username }}"
+          MAIL_PASSWORD: "{{ mail_password }}"
+        healthcheck:
+          test: ["CMD", "wget", "--spider", "-q", "http://localhost:8085/actuator/health"]
+          interval: 30s
+          timeout: 10s
+          retries: 3
+      tags: [services, notification]
+
+  handlers:
+    - name: restart services
+      docker_container:
+        name: "{{ item }}"
+        state: restarted
+      loop:
+        - auth-service
+        - user-service
+        - travel-service
+        - payment-service
+        - notification-service
