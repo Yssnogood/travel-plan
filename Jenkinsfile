@@ -149,6 +149,7 @@ pipeline {
                     if (isUnix()) {
                         sh '''
                             docker compose -p ${COMPOSE_PROJECT} -f docker/docker-compose.infra.yml -f docker/docker-compose.services.yml down --remove-orphans
+                            for c in travel-postgres-primary travel-postgres-replica travel-neo4j travel-redis travel-rabbitmq travel-vault travel-api-gateway travel-auth-service travel-user-service travel-travel-service travel-payment-service travel-notification-service travel-admin-dashboard; do docker rm -f $c 2>/dev/null || true; done
                             docker compose -p ${COMPOSE_PROJECT} -f docker/docker-compose.infra.yml up -d
                             echo "Waiting for infrastructure services to initialize..."
                             sleep 30
@@ -158,6 +159,7 @@ pipeline {
                     } else {
                         bat '''
                             docker compose -p %COMPOSE_PROJECT% -f docker/docker-compose.infra.yml -f docker/docker-compose.services.yml down --remove-orphans
+                            for %%c in (travel-postgres-primary travel-postgres-replica travel-neo4j travel-redis travel-rabbitmq travel-vault travel-api-gateway travel-auth-service travel-user-service travel-travel-service travel-payment-service travel-notification-service travel-admin-dashboard) do docker rm -f %%c 2>nul
                             docker compose -p %COMPOSE_PROJECT% -f docker/docker-compose.infra.yml up -d
                             echo Waiting for infrastructure services to initialize...
                             ping -n 31 127.0.0.1 >nul

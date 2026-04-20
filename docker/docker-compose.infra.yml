@@ -5,7 +5,6 @@ services:
   # PostgreSQL Database with replication support
   postgres-primary:
     image: postgres:15-alpine
-    container_name: travel-postgres-primary
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-travel_admin}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-travel_secret}
@@ -31,7 +30,6 @@ services:
 
   postgres-replica:
     image: postgres:15-alpine
-    container_name: travel-postgres-replica
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-travel_admin}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-travel_secret}
@@ -51,7 +49,6 @@ services:
   # Neo4j Graph Database
   neo4j:
     image: neo4j:5-community
-    container_name: travel-neo4j
     environment:
       NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-travel_neo4j}
       NEO4J_PLUGINS: '["apoc"]'
@@ -80,7 +77,6 @@ services:
   # Redis for caching and session management
   redis:
     image: redis:7-alpine
-    container_name: travel-redis
     command: redis-server --requirepass ${REDIS_PASSWORD:-redis_secret} --appendonly yes
     ports:
       - "6379:6379"
@@ -101,7 +97,6 @@ services:
   # RabbitMQ for async messaging
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    container_name: travel-rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-travel_mq}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-mq_secret}
@@ -125,7 +120,6 @@ services:
   # HashiCorp Vault for secret management
   vault:
     image: hashicorp/vault:1.15
-    container_name: travel-vault
     cap_add:
       - IPC_LOCK
     environment:
