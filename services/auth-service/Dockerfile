@@ -9,8 +9,8 @@ COPY pom.xml .
 COPY services/shared-lib/pom.xml services/shared-lib/
 COPY services/auth-service/pom.xml services/auth-service/
 
-# Download dependencies
-RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
+# Fix Windows CRLF line endings and download dependencies
+RUN sed -i 's/\r$//' mvnw && chmod +x mvnw && ./mvnw dependency:go-offline -B
 
 # Copy source code
 COPY services/shared-lib/src services/shared-lib/src

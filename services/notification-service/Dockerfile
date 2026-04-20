@@ -8,7 +8,7 @@ COPY pom.xml .
 COPY services/shared-lib/pom.xml services/shared-lib/
 COPY services/notification-service/pom.xml services/notification-service/
 
-RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
+RUN sed -i 's/\r$//' mvnw && chmod +x mvnw && ./mvnw dependency:go-offline -B
 
 COPY services/shared-lib/src services/shared-lib/src
 COPY services/notification-service/src services/notification-service/src

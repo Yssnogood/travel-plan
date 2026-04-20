@@ -8,7 +8,7 @@ COPY pom.xml .
 COPY services/shared-lib/pom.xml services/shared-lib/
 COPY services/payment-service/pom.xml services/payment-service/
 
-RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
+RUN sed -i 's/\r$//' mvnw && chmod +x mvnw && ./mvnw dependency:go-offline -B
 
 COPY services/shared-lib/src services/shared-lib/src
 COPY services/payment-service/src services/payment-service/src
