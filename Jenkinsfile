@@ -104,6 +104,13 @@ pipeline {
                             bat "docker build -t ${DOCKER_IMAGE_PREFIX}/${service}:${BUILD_VERSION} -t ${DOCKER_IMAGE_PREFIX}/${service}:latest -f services/${service}/Dockerfile ."
                         }
                     }
+                    // Build admin dashboard
+                    echo "Building Docker image for admin-dashboard..."
+                    if (isUnix()) {
+                        sh "docker build -t ${DOCKER_IMAGE_PREFIX}/admin-dashboard:${BUILD_VERSION} -t ${DOCKER_IMAGE_PREFIX}/admin-dashboard:latest -f admin-dashboard/Dockerfile admin-dashboard/"
+                    } else {
+                        bat "docker build -t ${DOCKER_IMAGE_PREFIX}/admin-dashboard:${BUILD_VERSION} -t ${DOCKER_IMAGE_PREFIX}/admin-dashboard:latest -f admin-dashboard/Dockerfile admin-dashboard/"
+                    }
                     echo "All Docker images built successfully"
                 }
             }
@@ -141,6 +148,7 @@ pipeline {
                     echo "Deploying to staging environment via Docker Compose..."
                     if (isUnix()) {
                         sh '''
+                            docker compose -p ${COMPOSE_PROJECT} -f docker/docker-compose.infra.yml -f docker/docker-compose.services.yml down --remove-orphans
                             docker compose -p ${COMPOSE_PROJECT} -f docker/docker-compose.infra.yml up -d
                             echo "Waiting for infrastructure services to initialize..."
                             sleep 30
@@ -149,6 +157,7 @@ pipeline {
                         '''
                     } else {
                         bat '''
+                            docker compose -p %COMPOSE_PROJECT% -f docker/docker-compose.infra.yml -f docker/docker-compose.services.yml down --remove-orphans
                             docker compose -p %COMPOSE_PROJECT% -f docker/docker-compose.infra.yml up -d
                             echo Waiting for infrastructure services to initialize...
                             ping -n 31 127.0.0.1 >nul

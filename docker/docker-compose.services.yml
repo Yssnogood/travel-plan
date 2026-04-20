@@ -4,7 +4,7 @@ version: '3.8'
 services:
   # API Gateway (Kong)
   api-gateway:
-    image: kong:3.4-alpine
+    image: kong:3.3.1-alpine
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /kong/declarative/kong.yml
