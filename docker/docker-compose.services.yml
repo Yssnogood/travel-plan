@@ -244,5 +244,4 @@ services:
 
 networks:
   travel-network:
-    external: true
-    name: docker_travel-network
+    driver: bridge
