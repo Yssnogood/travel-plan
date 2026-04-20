@@ -8,6 +8,10 @@ COPY mvnw .
 COPY pom.xml .
 COPY services/shared-lib/pom.xml services/shared-lib/
 COPY services/auth-service/pom.xml services/auth-service/
+COPY services/user-service/pom.xml services/user-service/
+COPY services/travel-service/pom.xml services/travel-service/
+COPY services/payment-service/pom.xml services/payment-service/
+COPY services/notification-service/pom.xml services/notification-service/
 
 # Fix Windows CRLF line endings and download dependencies
 RUN sed -i 's/\r$//' mvnw && chmod +x mvnw && ./mvnw dependency:go-offline -B
