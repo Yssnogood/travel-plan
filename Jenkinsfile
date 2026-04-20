@@ -15,8 +15,6 @@ pipeline {
         SONAR_PROJECT_KEY = 'Yssnogood_travel-plan'
         SONAR_ORGANIZATION = 'travel-plan-org'
         MAVEN_OPTS = '-Xmx2048m'
-        JAVA_HOME = tool 'JDK17'
-        PATH = "${JAVA_HOME}/bin:${PATH}"
     }
     
     stages {
@@ -24,7 +22,9 @@ pipeline {
             steps {
                 checkout scm
                 script {
-                    env.GIT_COMMIT_SHORT = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                    env.GIT_COMMIT_SHORT = isUnix()
+                        ? sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                        : bat(script: '@git rev-parse --short HEAD', returnStdout: true).trim()
                     env.BUILD_VERSION = "${env.BUILD_NUMBER}-${env.GIT_COMMIT_SHORT}"
                 }
             }
@@ -32,10 +32,13 @@ pipeline {
         
         stage('Build & Unit Tests') {
             steps {
-                sh '''
-                    ./mvnw clean package -DskipTests=false \
-                        -Dmaven.test.failure.ignore=false
-                '''
+                script {
+                    if (isUnix()) {
+                        sh './mvnw clean package -DskipTests=false -Dmaven.test.failure.ignore=false'
+                    } else {
+                        bat 'mvnw.cmd clean package -DskipTests=false -Dmaven.test.failure.ignore=false'
+                    }
+                }
             }
             post {
                 always {
@@ -49,17 +52,33 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'sonarcloud-token', variable: 'SONAR_TOKEN')]) {
                     withSonarQubeEnv("${SONARQUBE_SERVER}") {
-                        sh '''
-                            ./mvnw sonar:sonar \
-                                -Dsonar.host.url=https://sonarcloud.io \
-                                -Dsonar.token=${SONAR_TOKEN} \
-                                -Dsonar.organization=${SONAR_ORGANIZATION} \
-                                -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                                -Dsonar.projectName="Travel Plan" \
-                                -Dsonar.java.coveragePlugin=jacoco \
-                                -Dsonar.coverage.jacoco.xmlReportPaths=**/target/site/jacoco/jacoco.xml \
-                                -Dsonar.qualitygate.wait=true
-                        '''
+                        script {
+                            if (isUnix()) {
+                                sh '''
+                                    ./mvnw sonar:sonar \
+                                        -Dsonar.host.url=https://sonarcloud.io \
+                                        -Dsonar.token=${SONAR_TOKEN} \
+                                        -Dsonar.organization=${SONAR_ORGANIZATION} \
+                                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                                        -Dsonar.projectName="Travel Plan" \
+                                        -Dsonar.java.coveragePlugin=jacoco \
+                                        -Dsonar.coverage.jacoco.xmlReportPaths=**/target/site/jacoco/jacoco.xml \
+                                        -Dsonar.qualitygate.wait=true
+                                '''
+                            } else {
+                                bat '''
+                                    mvnw.cmd sonar:sonar ^
+                                        -Dsonar.host.url=https://sonarcloud.io ^
+                                        -Dsonar.token=%SONAR_TOKEN% ^
+                                        -Dsonar.organization=%SONAR_ORGANIZATION% ^
+                                        -Dsonar.projectKey=%SONAR_PROJECT_KEY% ^
+                                        -Dsonar.projectName="Travel Plan" ^
+                                        -Dsonar.java.coveragePlugin=jacoco ^
+                                        -Dsonar.coverage.jacoco.xmlReportPaths=**/target/site/jacoco/jacoco.xml ^
+                                        -Dsonar.qualitygate.wait=true
+                                '''
+                            }
+                        }
                     }
                 }
             }
@@ -109,11 +128,11 @@ pipeline {
                     def services = ['auth-service', 'user-service', 'travel-service', 'payment-service', 'notification-service']
                     
                     services.each { service ->
-                        sh """
-                            trivy image --severity HIGH,CRITICAL \
-                                --exit-code 1 \
-                                ${DOCKER_REGISTRY}/${service}:${BUILD_VERSION}
-                        """
+                        if (isUnix()) {
+                            sh "trivy image --severity HIGH,CRITICAL --exit-code 1 ${DOCKER_REGISTRY}/${service}:${BUILD_VERSION}"
+                        } else {
+                            bat "trivy image --severity HIGH,CRITICAL --exit-code 1 ${DOCKER_REGISTRY}/${service}:${BUILD_VERSION}"
+                        }
                     }
                 }
             }
@@ -121,7 +140,10 @@ pipeline {
         
         stage('Deploy to Staging') {
             when {
-                branch 'develop'
+                allOf {
+                    branch 'develop'
+                    expression { isUnix() }
+                }
             }
             steps {
                 script {
@@ -143,10 +165,13 @@ pipeline {
                 branch 'develop'
             }
             steps {
-                sh '''
-                    ./mvnw verify -Pintegration-tests \
-                        -Dtest.environment=staging
-                '''
+                script {
+                    if (isUnix()) {
+                        sh './mvnw verify -Pintegration-tests -Dtest.environment=staging'
+                    } else {
+                        bat 'mvnw.cmd verify -Pintegration-tests -Dtest.environment=staging'
+                    }
+                }
             }
             post {
                 always {
@@ -157,7 +182,10 @@ pipeline {
         
         stage('Deploy to Production') {
             when {
-                branch 'main'
+                allOf {
+                    branch 'main'
+                    expression { isUnix() }
+                }
             }
             steps {
                 input message: 'Deploy to production?', ok: 'Deploy'
@@ -178,9 +206,12 @@ pipeline {
         
         stage('Smoke Tests') {
             when {
-                anyOf {
-                    branch 'main'
-                    branch 'develop'
+                allOf {
+                    anyOf {
+                        branch 'main'
+                        branch 'develop'
+                    }
+                    expression { isUnix() }
                 }
             }
             steps {
@@ -195,20 +226,27 @@ pipeline {
     }
     
     post {
-        always {
-            cleanWs()
-        }
         success {
-            slackSend(
-                color: 'good',
-                message: "Build #${BUILD_NUMBER} succeeded for ${JOB_NAME} (${GIT_COMMIT_SHORT})"
-            )
+            script {
+                def shortCommit = env.GIT_COMMIT_SHORT ?: 'n/a'
+                def msg = "Build #${BUILD_NUMBER} succeeded for ${JOB_NAME} (${shortCommit})"
+                try {
+                    slackSend(color: 'good', message: msg)
+                } catch (Exception ignored) {
+                    echo msg
+                }
+            }
         }
         failure {
-            slackSend(
-                color: 'danger',
-                message: "Build #${BUILD_NUMBER} failed for ${JOB_NAME} (${GIT_COMMIT_SHORT})"
-            )
+            script {
+                def shortCommit = env.GIT_COMMIT_SHORT ?: 'n/a'
+                def msg = "Build #${BUILD_NUMBER} failed for ${JOB_NAME} (${shortCommit})"
+                try {
+                    slackSend(color: 'danger', message: msg)
+                } catch (Exception ignored) {
+                    echo msg
+                }
+            }
         }
     }
 }
