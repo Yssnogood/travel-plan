@@ -29,4 +29,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT COUNT(u) FROM User u WHERE u.status = :status")
     long countByStatus(@Param("status") User.UserStatus status);
+
+    @Query(value = "SELECT id FROM auth_schema.roles WHERE UPPER(name) = UPPER(:roleName) LIMIT 1", nativeQuery = true)
+    Optional<Long> findRoleIdByName(@Param("roleName") String roleName);
+
+    @Query(value = "SELECT name FROM auth_schema.roles WHERE id = :roleId", nativeQuery = true)
+    Optional<String> findRoleNameById(@Param("roleId") Long roleId);
 }

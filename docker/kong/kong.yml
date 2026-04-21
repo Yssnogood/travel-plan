@@ -61,11 +61,6 @@ services:
           - DELETE
           - OPTIONS
     plugins:
-      - name: jwt
-        config:
-          key_claim_name: kid
-          claims_to_verify:
-            - exp
       - name: cors
         config:
           origins:
@@ -108,11 +103,6 @@ services:
           - DELETE
           - OPTIONS
     plugins:
-      - name: jwt
-        config:
-          key_claim_name: kid
-          claims_to_verify:
-            - exp
       - name: cors
         config:
           origins:
@@ -152,11 +142,6 @@ services:
           - DELETE
           - OPTIONS
     plugins:
-      - name: jwt
-        config:
-          key_claim_name: kid
-          claims_to_verify:
-            - exp
       - name: cors
         config:
           origins:
@@ -195,11 +180,6 @@ services:
           - DELETE
           - OPTIONS
     plugins:
-      - name: jwt
-        config:
-          key_claim_name: kid
-          claims_to_verify:
-            - exp
       - name: cors
         config:
           origins:

@@ -12,6 +12,25 @@ export interface User {
   updatedAt: string;
 }
 
+interface BackendUser {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  status?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface BackendUsersPage {
+  content?: BackendUser[];
+}
+
+interface BackendPagedResponse extends Omit<PagedResponse<BackendUser>, 'data'> {
+  data: BackendUsersPage | BackendUser[];
+}
+
 export interface CreateUserRequest {
   email: string;
   password: string;
@@ -39,8 +58,27 @@ export interface UserSearchParams {
 
 export const userService = {
   getAll: async (params: UserSearchParams = {}): Promise<PagedResponse<User>> => {
-    const response = await apiClient.get('/users', { params });
-    return response.data;
+    const response = await apiClient.get<BackendPagedResponse>('/users', { params });
+    const payload = response.data;
+    const backendRows = Array.isArray(payload.data)
+      ? payload.data
+      : payload.data?.content || [];
+
+    const data: User[] = backendRows.map((user) => ({
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phoneNumber: user.phone,
+      active: user.status === 'ACTIVE',
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    }));
+
+    return {
+      ...payload,
+      data,
+    };
   },
 
   getById: async (id: number): Promise<ApiResponse<User>> => {
@@ -49,12 +87,20 @@ export const userService = {
   },
 
   create: async (data: CreateUserRequest): Promise<ApiResponse<User>> => {
-    const response = await apiClient.post('/users', data);
+    const payload = {
+      ...data,
+      phone: data.phoneNumber,
+    };
+    const response = await apiClient.post('/users', payload);
     return response.data;
   },
 
   update: async (id: number, data: UpdateUserRequest): Promise<ApiResponse<User>> => {
-    const response = await apiClient.put(`/users/${id}`, data);
+    const payload = {
+      ...data,
+      phone: data.phoneNumber,
+    };
+    const response = await apiClient.put(`/users/${id}`, payload);
     return response.data;
   },
 

@@ -55,6 +55,8 @@ public class UserService {
             throw new BusinessException("Email is already in use", HttpStatus.CONFLICT);
         }
 
+        Long roleId = resolveRoleId(request.getRoleName());
+
         User user = User.builder()
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
@@ -62,6 +64,7 @@ public class UserService {
                 .lastName(request.getLastName())
                 .phone(request.getPhone())
                 .avatarUrl(request.getAvatarUrl())
+                .roleId(roleId)
                 .status(User.UserStatus.ACTIVE)
                 .emailVerified(false)
                 .build();
@@ -90,6 +93,9 @@ public class UserService {
         }
         if (request.getStatus() != null) {
             user.setStatus(request.getStatus());
+        }
+        if (request.getRoleName() != null) {
+            user.setRoleId(resolveRoleId(request.getRoleName()));
         }
 
         user = userRepository.save(user);
@@ -166,6 +172,9 @@ public class UserService {
 
     private UserDto mapToDto(User user) {
         List<UserAddress> addresses = addressRepository.findByUserId(user.getId());
+        String roleName = user.getRoleId() != null
+            ? userRepository.findRoleNameById(user.getRoleId()).orElse(null)
+            : null;
         
         return UserDto.builder()
                 .id(user.getId())
@@ -176,12 +185,22 @@ public class UserService {
                 .avatarUrl(user.getAvatarUrl())
                 .status(user.getStatus())
                 .emailVerified(user.getEmailVerified())
+            .roleName(roleName)
                 .addresses(addresses.stream().map(this::mapAddressToDto).collect(Collectors.toList()))
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .lastLoginAt(user.getLastLoginAt())
                 .build();
     }
+
+        private Long resolveRoleId(String requestedRoleName) {
+        String effectiveRole = (requestedRoleName == null || requestedRoleName.isBlank())
+            ? "USER"
+            : requestedRoleName.trim();
+
+        return userRepository.findRoleIdByName(effectiveRole)
+            .orElseThrow(() -> new BusinessException("Role not found: " + effectiveRole, HttpStatus.BAD_REQUEST));
+        }
 
     private UserDto.AddressDto mapAddressToDto(UserAddress address) {
         return UserDto.AddressDto.builder()

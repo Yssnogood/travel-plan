@@ -10,6 +10,10 @@ export const apiClient = axios.create({
   },
 });
 
+interface RetriableAxiosRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
+
 // Request interceptor to add auth token
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -26,9 +30,13 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config;
+    const originalRequest = error.config as RetriableAxiosRequestConfig | undefined;
+    const status = error.response?.status;
+    const isRefreshCall = originalRequest?.url?.includes('/auth/refresh');
+    const canAttemptRefresh = (status === 401 || status === 403) && !!originalRequest && !originalRequest._retry && !isRefreshCall;
     
-    if (error.response?.status === 401 && originalRequest) {
+    if (canAttemptRefresh) {
+      originalRequest._retry = true;
       const { refreshToken, updateTokens, logout } = useAuthStore.getState();
       
       if (refreshToken) {
