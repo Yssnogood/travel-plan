@@ -1,0 +1,4 @@
+email,password,firstName,lastName,phone,role
+admin.local@travel-plan.com,Admin123!,System,Admin,0000000000,ADMIN
+manager.local@travel-plan.com,Manager123!,Travel,Manager,0000000001,MANAGER
+user.local@travel-plan.com,User123!,Demo,User,0000000002,USER
