@@ -27,26 +27,31 @@ public class TravelService {
     private final DestinationRepository destinationRepository;
     private final ActivityRepository activityRepository;
 
-    @Transactional(readOnly = true)
+    @Transactional(transactionManager = "transactionManager", readOnly = true)
     public Page<TravelDto> getAllTravels(Long userId, Travel.TravelStatus status, String search, Pageable pageable) {
-        return travelRepository.findAllWithFilters(userId, status, search, pageable)
+        boolean hasSearch = search != null && !search.isBlank();
+        Page<Travel> travels = hasSearch
+            ? travelRepository.findAllWithFiltersAndSearch(userId, status, search.trim(), pageable)
+            : travelRepository.findAllWithFilters(userId, status, pageable);
+
+        return travels
                 .map(this::mapToDto);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(transactionManager = "transactionManager", readOnly = true)
     public TravelDto getTravelById(Long id) {
         Travel travel = travelRepository.findByIdWithDestinations(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Travel", id));
         return mapToDto(travel);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(transactionManager = "transactionManager", readOnly = true)
     public Page<TravelDto> getUserTravels(Long userId, Pageable pageable) {
         return travelRepository.findByCreatedBy(userId, pageable)
                 .map(this::mapToDto);
     }
 
-    @Transactional
+    @Transactional(transactionManager = "transactionManager")
     public TravelDto createTravel(CreateTravelRequest request, Long userId) {
         validateDates(request.getStartDate(), request.getEndDate());
 
@@ -88,7 +93,7 @@ public class TravelService {
         return mapToDto(savedTravel);
     }
 
-    @Transactional
+    @Transactional(transactionManager = "transactionManager")
     public TravelDto updateTravel(Long id, UpdateTravelRequest request, Long userId, boolean isAdmin) {
         Travel travel = travelRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Travel", id));
@@ -128,7 +133,7 @@ public class TravelService {
         return mapToDto(updatedTravel);
     }
 
-    @Transactional
+    @Transactional(transactionManager = "transactionManager")
     public void deleteTravel(Long id, Long userId, boolean isAdmin) {
         Travel travel = travelRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Travel", id));
@@ -141,7 +146,7 @@ public class TravelService {
         log.info("Deleted travel with id: {}", id);
     }
 
-    @Transactional
+    @Transactional(transactionManager = "transactionManager")
     public TravelDto updateTravelStatus(Long id, Travel.TravelStatus status, Long userId, boolean isAdmin) {
         Travel travel = travelRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Travel", id));

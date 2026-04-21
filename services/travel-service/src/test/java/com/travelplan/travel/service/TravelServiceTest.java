@@ -73,14 +73,14 @@ class TravelServiceTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Travel> page = new PageImpl<>(List.of(travel), pageable, 1);
 
-        when(travelRepository.findAllWithFilters(eq(userId), eq(Travel.TravelStatus.DRAFT), eq("Paris"), eq(pageable)))
+        when(travelRepository.findAllWithFiltersAndSearch(eq(userId), eq(Travel.TravelStatus.DRAFT), eq("Paris"), eq(pageable)))
                 .thenReturn(page);
 
         Page<TravelDto> result = travelService.getAllTravels(userId, Travel.TravelStatus.DRAFT, "Paris", pageable);
 
         assertThat(result.getTotalElements()).isEqualTo(1);
         assertThat(result.getContent().get(0).getTitle()).isEqualTo("Trip to Paris");
-        verify(travelRepository).findAllWithFilters(userId, Travel.TravelStatus.DRAFT, "Paris", pageable);
+        verify(travelRepository).findAllWithFiltersAndSearch(userId, Travel.TravelStatus.DRAFT, "Paris", pageable);
     }
 
     @Test

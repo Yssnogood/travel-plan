@@ -25,6 +25,7 @@ import {
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
+import { AxiosError } from 'axios';
 import { travelService, Travel, CreateTravelRequest, UpdateTravelRequest } from '../api/travelService';
 
 const STATUS_OPTIONS = [
@@ -46,6 +47,11 @@ export default function Travels() {
 
   const { register, handleSubmit, control, reset, formState: { errors } } = useForm<CreateTravelRequest>();
 
+  const getApiErrorMessage = (error: unknown, fallback: string) => {
+    const axiosError = error as AxiosError<{ message?: string }>;
+    return axiosError.response?.data?.message || fallback;
+  };
+
   const { data: travelsData, isLoading } = useQuery({
     queryKey: ['travels', page, pageSize],
     queryFn: () => travelService.getAll({ page, size: pageSize }),
@@ -59,8 +65,8 @@ export default function Travels() {
       reset();
       setSnackbar({ open: true, message: 'Voyage créé avec succès', severity: 'success' });
     },
-    onError: () => {
-      setSnackbar({ open: true, message: 'Erreur lors de la création', severity: 'error' });
+    onError: (error) => {
+      setSnackbar({ open: true, message: getApiErrorMessage(error, 'Erreur lors de la création'), severity: 'error' });
     },
   });
 
@@ -73,8 +79,8 @@ export default function Travels() {
       reset();
       setSnackbar({ open: true, message: 'Voyage mis à jour', severity: 'success' });
     },
-    onError: () => {
-      setSnackbar({ open: true, message: 'Erreur lors de la mise à jour', severity: 'error' });
+    onError: (error) => {
+      setSnackbar({ open: true, message: getApiErrorMessage(error, 'Erreur lors de la mise à jour'), severity: 'error' });
     },
   });
 
@@ -86,8 +92,8 @@ export default function Travels() {
       setSelectedTravel(null);
       setSnackbar({ open: true, message: 'Voyage supprimé', severity: 'success' });
     },
-    onError: () => {
-      setSnackbar({ open: true, message: 'Erreur lors de la suppression', severity: 'error' });
+    onError: (error) => {
+      setSnackbar({ open: true, message: getApiErrorMessage(error, 'Erreur lors de la suppression'), severity: 'error' });
     },
   });
 
@@ -103,19 +109,32 @@ export default function Travels() {
       field: 'startDate',
       headerName: 'Début',
       width: 120,
-      valueFormatter: (value: string) => new Date(value).toLocaleDateString('fr-FR'),
+      renderCell: (params: GridRenderCellParams<Travel>) => {
+        const value = params.row?.startDate;
+        if (!value) return '-';
+        return new Date(value).toLocaleDateString('fr-FR');
+      },
     },
     {
       field: 'endDate',
       headerName: 'Fin',
       width: 120,
-      valueFormatter: (value: string) => new Date(value).toLocaleDateString('fr-FR'),
+      renderCell: (params: GridRenderCellParams<Travel>) => {
+        const value = params.row?.endDate;
+        if (!value) return '-';
+        return new Date(value).toLocaleDateString('fr-FR');
+      },
     },
     {
       field: 'budget',
       headerName: 'Budget',
       width: 120,
-      valueFormatter: (value: number, row: Travel) => value ? `${value.toLocaleString()} ${row.currency}` : '-',
+      renderCell: (params: GridRenderCellParams<Travel>) => {
+        const value = params.row?.budget;
+        if (value == null) return '-';
+        const currency = params.row?.currency || 'EUR';
+        return `${value.toLocaleString()} ${currency}`;
+      },
     },
     {
       field: 'status',
@@ -274,13 +293,10 @@ export default function Travels() {
             />
             <TextField
               fullWidth
-              label="User ID"
-              type="number"
+              label="Devise"
               margin="normal"
-              {...register('userId', { required: 'User ID requis', valueAsNumber: true })}
-              error={!!errors.userId}
-              helperText={errors.userId?.message}
-              defaultValue={selectedTravel?.userId}
+              {...register('currency')}
+              defaultValue={selectedTravel?.currency || 'EUR'}
             />
             {selectedTravel && (
               <Controller

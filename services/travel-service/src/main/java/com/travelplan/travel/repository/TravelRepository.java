@@ -20,9 +20,17 @@ public interface TravelRepository extends JpaRepository<Travel, Long> {
 
     @Query("SELECT t FROM Travel t WHERE " +
             "(:userId IS NULL OR t.createdBy = :userId) AND " +
-            "(:status IS NULL OR t.status = :status) AND " +
-            "(:search IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :search, '%')))")
+            "(:status IS NULL OR t.status = :status)")
     Page<Travel> findAllWithFilters(
+            @Param("userId") Long userId,
+            @Param("status") Travel.TravelStatus status,
+            Pageable pageable);
+
+    @Query("SELECT t FROM Travel t WHERE " +
+            "(:userId IS NULL OR t.createdBy = :userId) AND " +
+            "(:status IS NULL OR t.status = :status) AND " +
+            "LOWER(t.title) LIKE LOWER(CONCAT('%', :search, '%'))")
+    Page<Travel> findAllWithFiltersAndSearch(
             @Param("userId") Long userId,
             @Param("status") Travel.TravelStatus status,
             @Param("search") String search,

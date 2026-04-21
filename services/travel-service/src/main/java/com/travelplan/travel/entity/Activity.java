@@ -33,7 +33,7 @@ public class Activity {
     private String category;
 
     @Column(name = "duration_hours")
-    private Integer durationHours;
+    private BigDecimal durationHours;
 
     @Column(name = "price_estimate", precision = 10, scale = 2)
     private BigDecimal priceEstimate;

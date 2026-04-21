@@ -30,6 +30,29 @@ export interface Travel {
   updatedAt: string;
 }
 
+interface BackendTravel {
+  id: number;
+  title: string;
+  description?: string;
+  startDate: string;
+  endDate: string;
+  totalBudget?: number;
+  currency: string;
+  status: 'DRAFT' | 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  createdBy: number;
+  destinations?: Destination[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface BackendTravelsPage {
+  content?: BackendTravel[];
+}
+
+interface BackendPagedTravelResponse extends Omit<PagedResponse<BackendTravel>, 'data'> {
+  data: BackendTravelsPage | BackendTravel[];
+}
+
 export interface CreateTravelRequest {
   title: string;
   description?: string;
@@ -37,7 +60,6 @@ export interface CreateTravelRequest {
   endDate: string;
   budget?: number;
   currency?: string;
-  userId: number;
   destinationIds?: number[];
   activityIds?: number[];
 }
@@ -65,8 +87,32 @@ export interface TravelSearchParams {
 
 export const travelService = {
   getAll: async (params: TravelSearchParams = {}): Promise<PagedResponse<Travel>> => {
-    const response = await apiClient.get('/travels', { params });
-    return response.data;
+    const response = await apiClient.get<BackendPagedTravelResponse>('/travels', { params });
+    const payload = response.data;
+    const backendRows = Array.isArray(payload.data)
+      ? payload.data
+      : payload.data?.content || [];
+
+    const data: Travel[] = backendRows.map((travel) => ({
+      id: travel.id,
+      title: travel.title,
+      description: travel.description,
+      startDate: travel.startDate,
+      endDate: travel.endDate,
+      budget: travel.totalBudget,
+      currency: travel.currency || 'EUR',
+      status: travel.status,
+      userId: travel.createdBy || 0,
+      destinations: travel.destinations || [],
+      activities: [],
+      createdAt: travel.createdAt,
+      updatedAt: travel.updatedAt,
+    }));
+
+    return {
+      ...payload,
+      data,
+    };
   },
 
   getById: async (id: number): Promise<ApiResponse<Travel>> => {
@@ -75,12 +121,26 @@ export const travelService = {
   },
 
   create: async (data: CreateTravelRequest): Promise<ApiResponse<Travel>> => {
-    const response = await apiClient.post('/travels', data);
+    const payload = {
+      title: data.title,
+      description: data.description,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      totalBudget: data.budget,
+      currency: data.currency,
+      destinations: data.destinationIds?.map((id) => ({ destinationId: id })),
+    };
+    const response = await apiClient.post('/travels', payload);
     return response.data;
   },
 
   update: async (id: number, data: UpdateTravelRequest): Promise<ApiResponse<Travel>> => {
-    const response = await apiClient.put(`/travels/${id}`, data);
+    const payload = {
+      ...data,
+      totalBudget: data.budget,
+      budget: undefined,
+    };
+    const response = await apiClient.put(`/travels/${id}`, payload);
     return response.data;
   },
 

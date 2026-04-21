@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,10 +39,10 @@ public class Destination {
     private String imageUrl;
 
     @Column(precision = 10)
-    private Double latitude;
+    private BigDecimal latitude;
 
-    @Column(precision = 10)
-    private Double longitude;
+    @Column(precision = 11)
+    private BigDecimal longitude;
 
     @Column(length = 50)
     private String timezone;
