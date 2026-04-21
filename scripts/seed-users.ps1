@@ -7,9 +7,43 @@ param(
     [string]$DbPassword = "travel_secret_2024"
 )
 
+$candidateAuthUrls = @(
+    $AuthBaseUrl,
+    "http://localhost:3000/api/v1/auth",
+    "http://localhost:8080/api/v1/auth"
+) | Select-Object -Unique
+
+function Resolve-AuthBaseUrl {
+    param([string[]]$Urls)
+
+    foreach ($url in $Urls) {
+        try {
+            # /validate is expected to return 401/403 without a token, which proves service reachability.
+            Invoke-WebRequest -Method Get -Uri "$url/validate" -UseBasicParsing -TimeoutSec 5 -Headers @{ Authorization = "Bearer invalid" } | Out-Null
+            return $url
+        } catch {
+            if ($_.Exception.Response -and $_.Exception.Response.StatusCode) {
+                $statusCode = [int]$_.Exception.Response.StatusCode
+                if ($statusCode -in 401, 403, 405) {
+                    return $url
+                }
+            }
+        }
+    }
+
+    return $null
+}
+
 if (-not (Test-Path $SeedFile)) {
     throw "Seed file not found: $SeedFile"
 }
+
+$resolvedAuthBaseUrl = Resolve-AuthBaseUrl -Urls $candidateAuthUrls
+if (-not $resolvedAuthBaseUrl) {
+    throw "Auth API unreachable. Start services first, e.g. in docker folder: docker compose --env-file ..\.env -f docker-compose.infra.yml -f docker-compose.services.yml up -d auth-service api-gateway admin-dashboard"
+}
+
+Write-Output "Using auth API: $resolvedAuthBaseUrl"
 
 function Escape-SqlLiteral {
     param([string]$Value)
@@ -36,7 +70,7 @@ foreach ($user in $users) {
     } | ConvertTo-Json -Compress
 
     try {
-        Invoke-RestMethod -Method Post -Uri "$AuthBaseUrl/register" -ContentType "application/json" -Body $payload | Out-Null
+        Invoke-RestMethod -Method Post -Uri "$resolvedAuthBaseUrl/register" -ContentType "application/json" -Body $payload | Out-Null
         Write-Output "Registered user: $($user.email)"
     } catch {
         $statusCode = $null

@@ -44,7 +44,7 @@ export default function Login() {
       const { user, accessToken, refreshToken } = response.data;
       
       // Check if user has admin role
-      if (!user.roles.includes('ADMIN')) {
+      if (user.role !== 'ADMIN') {
         setError('Accès réservé aux administrateurs');
         return;
       }

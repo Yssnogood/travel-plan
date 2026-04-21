@@ -42,8 +42,8 @@ services:
   # Auth Service
   auth-service:
     build:
-      context: ../services/auth-service
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: services/auth-service/Dockerfile
     image: travel-plan/auth-service:latest
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -74,8 +74,8 @@ services:
   # User Service
   user-service:
     build:
-      context: ../services/user-service
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: services/user-service/Dockerfile
     image: travel-plan/user-service:latest
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -108,8 +108,8 @@ services:
   # Travel Service
   travel-service:
     build:
-      context: ../services/travel-service
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: services/travel-service/Dockerfile
     image: travel-plan/travel-service:latest
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -145,8 +145,8 @@ services:
   # Payment Service
   payment-service:
     build:
-      context: ../services/payment-service
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: services/payment-service/Dockerfile
     image: travel-plan/payment-service:latest
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -182,8 +182,8 @@ services:
   # Notification Service
   notification-service:
     build:
-      context: ../services/notification-service
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: services/notification-service/Dockerfile
     image: travel-plan/notification-service:latest
     environment:
       SPRING_PROFILES_ACTIVE: docker
