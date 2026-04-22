@@ -5,7 +5,13 @@ import com.travelplan.shared.exception.ResourceNotFoundException;
 import com.travelplan.travel.dto.CreateTravelRequest;
 import com.travelplan.travel.dto.TravelDto;
 import com.travelplan.travel.dto.UpdateTravelRequest;
+import com.travelplan.travel.entity.Activity;
+import com.travelplan.travel.entity.Destination;
 import com.travelplan.travel.entity.Travel;
+import com.travelplan.travel.entity.TravelAccommodation;
+import com.travelplan.travel.entity.TravelActivity;
+import com.travelplan.travel.entity.TravelDestination;
+import com.travelplan.travel.entity.Transportation;
 import com.travelplan.travel.repository.ActivityRepository;
 import com.travelplan.travel.repository.DestinationRepository;
 import com.travelplan.travel.repository.TravelRepository;
@@ -22,6 +28,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -73,7 +80,7 @@ class TravelServiceTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Travel> page = new PageImpl<>(List.of(travel), pageable, 1);
 
-        when(travelRepository.findAllWithFiltersAndSearch(eq(userId), eq(Travel.TravelStatus.DRAFT), eq("Paris"), eq(pageable)))
+        when(travelRepository.findAllWithFiltersAndSearch(userId, Travel.TravelStatus.DRAFT, "Paris", pageable))
                 .thenReturn(page);
 
         Page<TravelDto> result = travelService.getAllTravels(userId, Travel.TravelStatus.DRAFT, "Paris", pageable);
@@ -82,6 +89,21 @@ class TravelServiceTest {
         assertThat(result.getContent().get(0).getTitle()).isEqualTo("Trip to Paris");
         verify(travelRepository).findAllWithFiltersAndSearch(userId, Travel.TravelStatus.DRAFT, "Paris", pageable);
     }
+
+        @Test
+        void getAllTravels_blankSearch_usesFiltersWithoutSearch() {
+                Pageable pageable = PageRequest.of(0, 10);
+                Page<Travel> page = new PageImpl<>(List.of(travel), pageable, 1);
+
+                when(travelRepository.findAllWithFilters(userId, Travel.TravelStatus.DRAFT, pageable))
+                                .thenReturn(page);
+
+                Page<TravelDto> result = travelService.getAllTravels(userId, Travel.TravelStatus.DRAFT, "   ", pageable);
+
+                assertThat(result.getContent()).hasSize(1);
+                verify(travelRepository).findAllWithFilters(userId, Travel.TravelStatus.DRAFT, pageable);
+                verify(travelRepository, never()).findAllWithFiltersAndSearch(anyLong(), any(), anyString(), any(Pageable.class));
+        }
 
     @Test
     void getTravelById_existingId_returnsTravelDto() {
@@ -152,6 +174,84 @@ class TravelServiceTest {
         assertThatThrownBy(() -> travelService.createTravel(request, userId))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("End date cannot be before start date");
+    }
+
+    @Test
+    void createTravel_withNestedData_mapsAndCalculatesDefaults() {
+        LocalDate startDate = LocalDate.of(2026, 8, 1);
+        LocalDate endDate = LocalDate.of(2026, 8, 10);
+
+        CreateTravelRequest.CreateActivityRequest activityRequest = CreateTravelRequest.CreateActivityRequest.builder()
+                .activityId(20L)
+                .plannedDate(LocalDate.of(2026, 8, 2))
+                .plannedTime("10:00")
+                .notes("Morning visit")
+                .build();
+
+        CreateTravelRequest.CreateDestinationRequest destinationRequest = CreateTravelRequest.CreateDestinationRequest.builder()
+                .destinationId(10L)
+                .arrivalDate(LocalDate.of(2026, 8, 1))
+                .departureDate(LocalDate.of(2026, 8, 4))
+                .notes("City center")
+                .activities(List.of(activityRequest))
+                .build();
+
+        CreateTravelRequest.CreateAccommodationRequest accommodationRequest = CreateTravelRequest.CreateAccommodationRequest.builder()
+                .name("Hotel Central")
+                .checkInDate(LocalDate.of(2026, 8, 1))
+                .checkOutDate(LocalDate.of(2026, 8, 4))
+                .pricePerNight(new BigDecimal("120.00"))
+                .notes("Breakfast included")
+                .build();
+
+        CreateTravelRequest.CreateTransportationRequest transportationRequest = CreateTravelRequest.CreateTransportationRequest.builder()
+                .type("flight")
+                .departureLocation("CDG")
+                .arrivalLocation("FCO")
+                .departureTime(LocalDateTime.of(2026, 8, 1, 9, 0))
+                .arrivalTime(LocalDateTime.of(2026, 8, 1, 11, 0))
+                .price(new BigDecimal("199.99"))
+                .notes("Direct")
+                .build();
+
+        CreateTravelRequest request = CreateTravelRequest.builder()
+                .title("Complex Trip")
+                .description("Full itinerary")
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalBudget(new BigDecimal("1800.00"))
+                .destinations(List.of(destinationRequest))
+                .accommodations(List.of(accommodationRequest))
+                .transportations(List.of(transportationRequest))
+                .build();
+
+        Destination destination = Destination.builder().id(10L).name("Rome").country("Italy").city("Rome").build();
+        Activity activity = Activity.builder().id(20L).name("Colosseum").category("culture").build();
+
+        when(destinationRepository.findById(10L)).thenReturn(Optional.of(destination));
+        when(activityRepository.findById(20L)).thenReturn(Optional.of(activity));
+        when(travelRepository.save(any(Travel.class))).thenAnswer(invocation -> {
+            Travel saved = invocation.getArgument(0);
+            saved.setId(222L);
+            return saved;
+        });
+
+        TravelDto result = travelService.createTravel(request, userId);
+
+        assertThat(result.getId()).isEqualTo(222L);
+        assertThat(result.getDestinations()).hasSize(1);
+        assertThat(result.getDestinations().get(0).getVisitOrder()).isEqualTo(1);
+        assertThat(result.getDestinations().get(0).getActivities()).hasSize(1);
+        assertThat(result.getAccommodations()).hasSize(1);
+        assertThat(result.getAccommodations().get(0).getTotalPrice()).isEqualByComparingTo(new BigDecimal("360.00"));
+        assertThat(result.getAccommodations().get(0).getCurrency()).isEqualTo("EUR");
+        assertThat(result.getTransportations()).hasSize(1);
+        assertThat(result.getTransportations().get(0).getType()).isEqualTo("FLIGHT");
+        assertThat(result.getTransportations().get(0).getCurrency()).isEqualTo("EUR");
+
+        verify(destinationRepository).findById(10L);
+        verify(activityRepository).findById(20L);
+        verify(travelRepository).save(any(Travel.class));
     }
 
     @Test
@@ -233,6 +333,22 @@ class TravelServiceTest {
     }
 
     @Test
+    void updateTravel_whenRequestCreatesInvalidDates_throwsBusinessException() {
+        UpdateTravelRequest request = UpdateTravelRequest.builder()
+                .startDate(LocalDate.of(2026, 6, 20))
+                .endDate(LocalDate.of(2026, 6, 10))
+                .build();
+
+        when(travelRepository.findById(travelId)).thenReturn(Optional.of(travel));
+
+        assertThatThrownBy(() -> travelService.updateTravel(travelId, request, userId, false))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("End date cannot be before start date");
+
+        verify(travelRepository, never()).save(any(Travel.class));
+    }
+
+    @Test
     void deleteTravel_asOwner_deletesSuccessfully() {
         when(travelRepository.findById(travelId)).thenReturn(Optional.of(travel));
 
@@ -304,4 +420,85 @@ class TravelServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("permission");
     }
+
+        @Test
+        void getUserTravels_returnsMappedPage() {
+                Pageable pageable = PageRequest.of(0, 10);
+                Page<Travel> page = new PageImpl<>(List.of(travel), pageable, 1);
+
+                when(travelRepository.findByCreatedBy(userId, pageable)).thenReturn(page);
+
+                Page<TravelDto> result = travelService.getUserTravels(userId, pageable);
+
+                assertThat(result.getContent()).hasSize(1);
+                assertThat(result.getContent().get(0).getId()).isEqualTo(travelId);
+                verify(travelRepository).findByCreatedBy(userId, pageable);
+        }
+
+        @Test
+        void getTravelById_withNestedEntities_mapsCollections() {
+                Destination destination = Destination.builder().id(10L).name("Paris").country("France").city("Paris").build();
+                Activity activity = Activity.builder().id(20L).name("Louvre").category("museum").build();
+
+                TravelDestination travelDestination = TravelDestination.builder()
+                                .id(300L)
+                                .travel(travel)
+                                .destination(destination)
+                                .visitOrder(1)
+                                .activities(new ArrayList<>())
+                                .build();
+
+                TravelActivity travelActivity = TravelActivity.builder()
+                                .id(400L)
+                                .travelDestination(travelDestination)
+                                .activity(activity)
+                                .plannedDate(LocalDate.of(2026, 6, 2))
+                                .plannedTime("14:00")
+                                .status(TravelActivity.BookingStatus.BOOKED)
+                                .build();
+                travelDestination.getActivities().add(travelActivity);
+
+                TravelAccommodation accommodation = TravelAccommodation.builder()
+                                .id(500L)
+                                .travel(travel)
+                                .name("Hotel")
+                                .checkInDate(LocalDate.of(2026, 6, 1))
+                                .checkOutDate(LocalDate.of(2026, 6, 3))
+                                .status(TravelAccommodation.BookingStatus.CONFIRMED)
+                                .build();
+
+                Transportation transportation = Transportation.builder()
+                                .id(600L)
+                                .travel(travel)
+                                .type(Transportation.TransportType.TRAIN)
+                                .departureTime(LocalDateTime.of(2026, 6, 1, 8, 0))
+                                .arrivalTime(LocalDateTime.of(2026, 6, 1, 10, 0))
+                                .status(Transportation.BookingStatus.CONFIRMED)
+                                .build();
+
+                travel.setDestinations(new ArrayList<>(List.of(travelDestination)));
+                travel.setAccommodations(new ArrayList<>(List.of(accommodation)));
+                travel.setTransportations(new ArrayList<>(List.of(transportation)));
+
+                when(travelRepository.findByIdWithDestinations(travelId)).thenReturn(Optional.of(travel));
+
+                TravelDto result = travelService.getTravelById(travelId);
+
+                assertThat(result.getDestinations()).hasSize(1);
+                assertThat(result.getDestinations().get(0).getActivities()).hasSize(1);
+                assertThat(result.getDestinations().get(0).getActivities().get(0).getStatus()).isEqualTo("BOOKED");
+                assertThat(result.getAccommodations()).hasSize(1);
+                assertThat(result.getAccommodations().get(0).getStatus()).isEqualTo("CONFIRMED");
+                assertThat(result.getTransportations()).hasSize(1);
+                assertThat(result.getTransportations().get(0).getType()).isEqualTo("TRAIN");
+        }
+
+        @Test
+        void countMethods_returnRepositoryCounts() {
+                when(travelRepository.countByStatus(Travel.TravelStatus.PLANNED)).thenReturn(7L);
+                when(travelRepository.countByCreatedBy(userId)).thenReturn(3L);
+
+                assertThat(travelService.countTravelsByStatus(Travel.TravelStatus.PLANNED)).isEqualTo(7L);
+                assertThat(travelService.countUserTravels(userId)).isEqualTo(3L);
+        }
 }
