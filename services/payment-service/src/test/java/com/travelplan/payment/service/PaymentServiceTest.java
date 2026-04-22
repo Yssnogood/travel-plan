@@ -85,7 +85,7 @@ class PaymentServiceTest {
         LocalDateTime endDate = LocalDateTime.of(2026, 12, 31, 23, 59);
         Page<Payment> page = new PageImpl<>(List.of(payment), pageable, 1);
 
-        when(paymentRepository.findAllWithFilters(eq(userId), eq(Payment.PaymentStatus.PENDING), eq(startDate), eq(endDate), eq(pageable)))
+        when(paymentRepository.findAllWithFilters(userId, Payment.PaymentStatus.PENDING, startDate, endDate, pageable))
                 .thenReturn(page);
 
         Page<PaymentDto> result = paymentService.getAllPayments(userId, Payment.PaymentStatus.PENDING, startDate, endDate, pageable);
@@ -202,6 +202,19 @@ class PaymentServiceTest {
     }
 
     @Test
+    void createPayment_paymentMethodNotFound_throwsResourceNotFoundException() {
+        CreatePaymentRequest request = CreatePaymentRequest.builder()
+                .paymentMethodId(999L)
+                .amount(new BigDecimal("100.00"))
+                .build();
+
+        when(paymentMethodRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> paymentService.createPayment(request, userId))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
     void processPayment_pendingPayment_completesSuccessfully() {
         when(paymentRepository.findById(paymentId)).thenReturn(Optional.of(payment));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -232,6 +245,14 @@ class PaymentServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Access denied");
     }
+
+        @Test
+        void processPayment_notFound_throwsResourceNotFoundException() {
+                when(paymentRepository.findById(paymentId)).thenReturn(Optional.empty());
+
+                assertThatThrownBy(() -> paymentService.processPayment(paymentId, userId))
+                                .isInstanceOf(ResourceNotFoundException.class);
+        }
 
     @Test
     void cancelPayment_pendingPayment_asOwner_cancelsSuccessfully() {
@@ -273,6 +294,14 @@ class PaymentServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Access denied");
     }
+
+        @Test
+        void cancelPayment_notFound_throwsResourceNotFoundException() {
+                when(paymentRepository.findById(paymentId)).thenReturn(Optional.empty());
+
+                assertThatThrownBy(() -> paymentService.cancelPayment(paymentId, userId, false))
+                                .isInstanceOf(ResourceNotFoundException.class);
+        }
 
     @Test
     void createRefund_completedPayment_returnsRefundDto() {
@@ -349,4 +378,82 @@ class PaymentServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Access denied");
     }
+
+        @Test
+        void createRefund_fullAmount_marksPaymentAsRefunded() {
+                payment.setStatus(Payment.PaymentStatus.COMPLETED);
+                RefundRequest request = RefundRequest.builder()
+                                .amount(new BigDecimal("500.00"))
+                                .reason("Full refund")
+                                .build();
+
+                Refund savedRefund = Refund.builder()
+                                .id(2L)
+                                .payment(payment)
+                                .amount(new BigDecimal("500.00"))
+                                .reason("Full refund")
+                                .status(Refund.RefundStatus.COMPLETED)
+                                .build();
+
+                when(paymentRepository.findById(paymentId)).thenReturn(Optional.of(payment));
+                when(refundRepository.save(any(Refund.class))).thenReturn(savedRefund);
+                when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+                PaymentDto.RefundDto result = paymentService.createRefund(paymentId, request, userId, false);
+
+                assertThat(result.getId()).isEqualTo(2L);
+                assertThat(payment.getStatus()).isEqualTo(Payment.PaymentStatus.REFUNDED);
+        }
+
+        @Test
+        void createRefund_paymentNotFound_throwsResourceNotFoundException() {
+                RefundRequest request = RefundRequest.builder()
+                                .amount(new BigDecimal("10.00"))
+                                .reason("Missing")
+                                .build();
+
+                when(paymentRepository.findById(paymentId)).thenReturn(Optional.empty());
+
+                assertThatThrownBy(() -> paymentService.createRefund(paymentId, request, userId, false))
+                                .isInstanceOf(ResourceNotFoundException.class);
+        }
+
+        @Test
+        void getUserPayments_returnsMappedPage() {
+                Pageable pageable = PageRequest.of(0, 10);
+                Page<Payment> page = new PageImpl<>(List.of(payment), pageable, 1);
+                when(paymentRepository.findByUserId(userId, pageable)).thenReturn(page);
+
+                Page<PaymentDto> result = paymentService.getUserPayments(userId, pageable);
+
+                assertThat(result.getContent()).hasSize(1);
+                assertThat(result.getContent().get(0).getId()).isEqualTo(paymentId);
+        }
+
+        @Test
+        void getPaymentsByTravelId_returnsMappedList() {
+                when(paymentRepository.findByTravelId(50L)).thenReturn(List.of(payment));
+
+                List<PaymentDto> result = paymentService.getPaymentsByTravelId(50L);
+
+                assertThat(result).hasSize(1);
+                assertThat(result.get(0).getTravelId()).isEqualTo(50L);
+        }
+
+        @Test
+        void getPaymentStats_returnsAggregatedValues() {
+                when(paymentRepository.countByStatus(Payment.PaymentStatus.PENDING)).thenReturn(1L);
+                when(paymentRepository.countByStatus(Payment.PaymentStatus.COMPLETED)).thenReturn(2L);
+                when(paymentRepository.countByStatus(Payment.PaymentStatus.FAILED)).thenReturn(3L);
+                when(paymentRepository.countByStatus(Payment.PaymentStatus.REFUNDED)).thenReturn(4L);
+                when(paymentRepository.sumAmountByStatus(Payment.PaymentStatus.COMPLETED)).thenReturn(new BigDecimal("123.45"));
+
+                PaymentService.PaymentStats result = paymentService.getPaymentStats();
+
+                assertThat(result.getPendingCount()).isEqualTo(1L);
+                assertThat(result.getCompletedCount()).isEqualTo(2L);
+                assertThat(result.getFailedCount()).isEqualTo(3L);
+                assertThat(result.getRefundedCount()).isEqualTo(4L);
+                assertThat(result.getTotalCompletedAmount()).isEqualByComparingTo(new BigDecimal("123.45"));
+        }
 }

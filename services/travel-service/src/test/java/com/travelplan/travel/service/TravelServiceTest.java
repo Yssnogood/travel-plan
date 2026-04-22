@@ -255,6 +255,51 @@ class TravelServiceTest {
     }
 
     @Test
+    void createTravel_destinationNotFound_throwsResourceNotFoundException() {
+        CreateTravelRequest.CreateDestinationRequest destinationRequest = CreateTravelRequest.CreateDestinationRequest.builder()
+                .destinationId(999L)
+                .build();
+
+        CreateTravelRequest request = CreateTravelRequest.builder()
+                .title("Trip")
+                .startDate(LocalDate.of(2026, 9, 1))
+                .endDate(LocalDate.of(2026, 9, 2))
+                .destinations(List.of(destinationRequest))
+                .build();
+
+        when(destinationRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> travelService.createTravel(request, userId))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void createTravel_activityNotFound_throwsResourceNotFoundException() {
+        CreateTravelRequest.CreateActivityRequest activityRequest = CreateTravelRequest.CreateActivityRequest.builder()
+                .activityId(999L)
+                .build();
+
+        CreateTravelRequest.CreateDestinationRequest destinationRequest = CreateTravelRequest.CreateDestinationRequest.builder()
+                .destinationId(10L)
+                .activities(List.of(activityRequest))
+                .build();
+
+        CreateTravelRequest request = CreateTravelRequest.builder()
+                .title("Trip")
+                .startDate(LocalDate.of(2026, 9, 1))
+                .endDate(LocalDate.of(2026, 9, 2))
+                .destinations(List.of(destinationRequest))
+                .build();
+
+        Destination destination = Destination.builder().id(10L).name("Rome").country("Italy").city("Rome").build();
+        when(destinationRepository.findById(10L)).thenReturn(Optional.of(destination));
+        when(activityRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> travelService.createTravel(request, userId))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
     void updateTravel_asOwner_returnsTravelDto() {
         UpdateTravelRequest request = UpdateTravelRequest.builder()
                 .title("Updated Trip to Paris")
