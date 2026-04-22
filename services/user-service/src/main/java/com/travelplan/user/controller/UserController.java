@@ -31,7 +31,7 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get all users", description = "Retrieve all users with optional filtering and pagination")
     public ResponseEntity<ApiResponse<Page<UserDto>>> getAllUsers(
             @Parameter(description = "Search term for name or email")
@@ -56,7 +56,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER') or @userSecurityService.isOwner(#id, authentication)")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get user by ID", description = "Retrieve a specific user by their ID")
     public ResponseEntity<ApiResponse<UserDto>> getUserById(
             @Parameter(description = "User ID") @PathVariable Long id) {
@@ -77,7 +77,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @userSecurityService.isOwner(#id, authentication)")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update user", description = "Update an existing user")
     public ResponseEntity<ApiResponse<UserDto>> updateUser(
             @Parameter(description = "User ID") @PathVariable Long id,
