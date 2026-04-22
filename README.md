@@ -104,6 +104,23 @@ travel-plan/
 - **Network Isolation**: Services accessible only via API Gateway
 - **Principle of Least Privilege**: Minimal permissions per service
 
+## 👮 Authorization Matrix (RBAC)
+
+The following policy is enforced for audit-critical CRUD endpoints:
+
+| Domain | Endpoint Pattern | Methods | Required Role |
+|--------|------------------|---------|---------------|
+| Users | `/api/v1/users` | `GET`, `POST` | `ADMIN` |
+| Users | `/api/v1/users/{id}` | `GET`, `PUT`, `DELETE` | `ADMIN` |
+| Travels | `/api/v1/travels` | `GET`, `POST` | `ADMIN` |
+| Travels | `/api/v1/travels/{id}` | `GET`, `PUT`, `DELETE` | `ADMIN` |
+| Payment Methods | `/api/v1/payment-methods` | `GET`, `POST` | `ADMIN` |
+| Payment Methods | `/api/v1/payment-methods/{id}` | `GET`, `DELETE` | `ADMIN` |
+
+Notes:
+- Endpoints outside this matrix may still allow authenticated user-level access depending on domain behavior.
+- Enforcement is implemented at controller level with Spring Security `@PreAuthorize` rules.
+
 ## 📊 Monitoring & Logging
 
 - **Distributed Tracing**: Jaeger for request tracing across services

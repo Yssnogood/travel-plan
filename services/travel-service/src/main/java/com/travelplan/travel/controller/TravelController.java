@@ -31,7 +31,7 @@ public class TravelController {
     private final TravelService travelService;
 
     @GetMapping
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get all travels", description = "Retrieve travels with filtering and pagination")
     public ResponseEntity<ApiResponse<Page<TravelDto>>> getAllTravels(
             @Parameter(description = "Filter by user ID (admin only)")
@@ -62,7 +62,7 @@ public class TravelController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get travel by ID", description = "Retrieve a specific travel plan")
     public ResponseEntity<ApiResponse<TravelDto>> getTravelById(
             @Parameter(description = "Travel ID") @PathVariable Long id,
@@ -101,7 +101,7 @@ public class TravelController {
     }
 
     @PostMapping
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create travel", description = "Create a new travel plan")
     public ResponseEntity<ApiResponse<TravelDto>> createTravel(
             @Valid @RequestBody CreateTravelRequest request,
@@ -113,7 +113,7 @@ public class TravelController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update travel", description = "Update an existing travel plan")
     public ResponseEntity<ApiResponse<TravelDto>> updateTravel(
             @Parameter(description = "Travel ID") @PathVariable Long id,
@@ -125,7 +125,7 @@ public class TravelController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete travel", description = "Delete a travel plan")
     public ResponseEntity<ApiResponse<Void>> deleteTravel(
             @Parameter(description = "Travel ID") @PathVariable Long id,
@@ -136,7 +136,7 @@ public class TravelController {
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update travel status", description = "Update the status of a travel plan")
     public ResponseEntity<ApiResponse<TravelDto>> updateTravelStatus(
             @Parameter(description = "Travel ID") @PathVariable Long id,

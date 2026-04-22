@@ -32,7 +32,7 @@ public class PaymentMethodController {
     private final PaymentMethodService paymentMethodService;
 
     @GetMapping
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get payment methods", description = "Get all payment methods for the current user")
     public ResponseEntity<ApiResponse<List<PaymentMethodDto>>> getPaymentMethods(
             @AuthenticationPrincipal UserContext userContext) {
@@ -42,7 +42,7 @@ public class PaymentMethodController {
     }
 
     @GetMapping("/paged")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get payment methods (paginated)", description = "Get all payment methods with pagination")
     public ResponseEntity<ApiResponse<Page<PaymentMethodDto>>> getPaymentMethodsPaged(
             @AuthenticationPrincipal UserContext userContext,
@@ -62,7 +62,7 @@ public class PaymentMethodController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get payment method by ID", description = "Get a specific payment method")
     public ResponseEntity<ApiResponse<PaymentMethodDto>> getPaymentMethodById(
             @Parameter(description = "Payment method ID") @PathVariable Long id,
@@ -73,7 +73,7 @@ public class PaymentMethodController {
     }
 
     @PostMapping
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create payment method", description = "Add a new payment method")
     public ResponseEntity<ApiResponse<PaymentMethodDto>> createPaymentMethod(
             @Valid @RequestBody CreatePaymentMethodRequest request,
@@ -85,7 +85,7 @@ public class PaymentMethodController {
     }
 
     @PatchMapping("/{id}/default")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Set as default", description = "Set a payment method as default")
     public ResponseEntity<ApiResponse<PaymentMethodDto>> setAsDefault(
             @Parameter(description = "Payment method ID") @PathVariable Long id,
@@ -96,7 +96,7 @@ public class PaymentMethodController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete payment method", description = "Remove a payment method")
     public ResponseEntity<ApiResponse<Void>> deletePaymentMethod(
             @Parameter(description = "Payment method ID") @PathVariable Long id,
