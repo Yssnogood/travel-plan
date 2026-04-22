@@ -27,8 +27,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("SELECT p FROM Payment p WHERE " +
             "(:userId IS NULL OR p.userId = :userId) AND " +
             "(:status IS NULL OR p.status = :status) AND " +
-            "(:startDate IS NULL OR p.createdAt >= :startDate) AND " +
-            "(:endDate IS NULL OR p.createdAt <= :endDate)")
+            "(p.createdAt >= COALESCE(:startDate, p.createdAt)) AND " +
+            "(p.createdAt <= COALESCE(:endDate, p.createdAt))")
     Page<Payment> findAllWithFilters(
             @Param("userId") Long userId,
             @Param("status") Payment.PaymentStatus status,
