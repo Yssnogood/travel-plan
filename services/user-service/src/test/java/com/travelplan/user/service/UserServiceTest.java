@@ -118,6 +118,7 @@ class UserServiceTest {
     @Test
     void createUser_ShouldCreateAndReturnUser() {
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
+        when(userRepository.findRoleIdByName("USER")).thenReturn(Optional.of(1L));
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             User user = invocation.getArgument(0);
