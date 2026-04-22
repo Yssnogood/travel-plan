@@ -124,7 +124,7 @@ export default function PaymentMethods() {
       headerName: 'Expiration',
       width: 100,
       valueGetter: (_, row: PaymentMethod) => 
-        row.expiryMonth && row.expiryYear ? `${row.expiryMonth}/${row.expiryYear}` : '-',
+        row?.expiryMonth && row?.expiryYear ? `${row.expiryMonth}/${row.expiryYear}` : '-',
     },
     {
       field: 'isDefault',
@@ -141,7 +141,7 @@ export default function PaymentMethods() {
       ),
     },
     {
-      field: 'active',
+      field: 'isActive',
       headerName: 'Statut',
       width: 100,
       renderCell: (params: GridRenderCellParams) => (
@@ -181,7 +181,12 @@ export default function PaymentMethods() {
   ];
 
   const onSubmit = (data: CreatePaymentMethodRequest) => {
-    createMutation.mutate(data);
+    const payload: CreatePaymentMethodRequest = { ...data };
+    if (data.cardNumber) {
+      payload.lastFourDigits = data.cardNumber.replace(/\D/g, '').slice(-4);
+    }
+    delete payload.cardNumber;
+    createMutation.mutate(payload);
   };
 
   const isCardType = selectedType === 'CREDIT_CARD' || selectedType === 'DEBIT_CARD';

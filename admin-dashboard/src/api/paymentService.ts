@@ -9,7 +9,7 @@ export interface PaymentMethod {
   expiryMonth?: number;
   expiryYear?: number;
   isDefault: boolean;
-  active: boolean;
+  isActive: boolean;
   createdAt: string;
 }
 
@@ -32,6 +32,7 @@ export interface CreatePaymentMethodRequest {
   type: string;
   provider: string;
   cardNumber?: string;
+  lastFourDigits?: string;
   expiryMonth?: number;
   expiryYear?: number;
   isDefault?: boolean;
