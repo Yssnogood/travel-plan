@@ -69,7 +69,8 @@ pipeline {
                                         -Dsonar.projectName="Travel Plan" \
                                         -Dsonar.java.coveragePlugin=jacoco \
                                         -Dsonar.coverage.jacoco.xmlReportPaths=**/target/site/jacoco/jacoco.xml \
-                                        -Dsonar.qualitygate.wait=false
+                                        -Dsonar.qualitygate.wait=true \
+                                        -Dsonar.qualitygate.timeout=300
                                 '''
                             } else {
                                 bat '''
@@ -83,7 +84,8 @@ pipeline {
                                         -Dsonar.projectName="Travel Plan" ^
                                         -Dsonar.java.coveragePlugin=jacoco ^
                                         -Dsonar.coverage.jacoco.xmlReportPaths=**/target/site/jacoco/jacoco.xml ^
-                                        -Dsonar.qualitygate.wait=false
+                                        -Dsonar.qualitygate.wait=true ^
+                                        -Dsonar.qualitygate.timeout=300
                                 '''
                             }
                         }
