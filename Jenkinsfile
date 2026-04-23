@@ -238,15 +238,25 @@ pipeline {
                 script {
                     if (isUnix()) {
                         sh '''
-                            chmod +x scripts/run-ansible-evidence.sh
-                            INVENTORY=ansible/inventory/hosts.yml \
-                            PLAYBOOK=ansible/playbooks/deploy-all.yml \
-                            ENVIRONMENT=${ANSIBLE_ENVIRONMENT} \
-                            scripts/run-ansible-evidence.sh
+                            docker run --rm \
+                              -v "$PWD:/workspace" \
+                              -w /workspace \
+                              -e INVENTORY=ansible/inventory/hosts.yml \
+                              -e PLAYBOOK=ansible/playbooks/deploy-all.yml \
+                              -e ENVIRONMENT=${ANSIBLE_ENVIRONMENT} \
+                              cytopia/ansible:latest \
+                              bash -lc "chmod +x scripts/run-ansible-evidence.sh; ./scripts/run-ansible-evidence.sh"
                         '''
                     } else {
                         bat '''
-                            powershell -ExecutionPolicy Bypass -File scripts\\run-ansible-evidence.ps1 -Environment "%ANSIBLE_ENVIRONMENT%"
+                            docker run --rm ^
+                              -v "%CD%:/workspace" ^
+                              -w /workspace ^
+                              -e INVENTORY=ansible/inventory/hosts.yml ^
+                              -e PLAYBOOK=ansible/playbooks/deploy-all.yml ^
+                              -e ENVIRONMENT=%ANSIBLE_ENVIRONMENT% ^
+                              cytopia/ansible:latest ^
+                              bash -lc "chmod +x scripts/run-ansible-evidence.sh; ./scripts/run-ansible-evidence.sh"
                         '''
                     }
                 }
