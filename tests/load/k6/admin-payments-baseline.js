@@ -2,6 +2,7 @@ import http from 'k6/http';
 import { check, sleep } from 'k6';
 import crypto from 'k6/crypto';
 import encoding from 'k6/encoding';
+import { Counter } from 'k6/metrics';
 
 const baseUrl = (__ENV.BASE_URL || 'http://host.docker.internal:8080').replace(/\/$/, '');
 const adminEmail = __ENV.ADMIN_EMAIL || 'admin@travel-plan.com';
@@ -12,6 +13,18 @@ const vus = Number(__ENV.K6_VUS || 10);
 const duration = __ENV.K6_DURATION || '60s';
 const p95Threshold = __ENV.K6_P95_THRESHOLD || '800';
 const errorRateThreshold = __ENV.K6_ERROR_RATE_THRESHOLD || '0.05';
+const mode = (__ENV.K6_MODE || 'capacity').toLowerCase();
+
+const httpStatus2xx = new Counter('http_status_2xx');
+const httpStatus4xx = new Counter('http_status_4xx');
+const httpStatus5xx = new Counter('http_status_5xx');
+const httpStatus200 = new Counter('http_status_200');
+const httpStatus401 = new Counter('http_status_401');
+const httpStatus403 = new Counter('http_status_403');
+const httpStatus429 = new Counter('http_status_429');
+const httpStatus5xxExact = new Counter('http_status_5xx_exact');
+
+const successThreshold = mode === 'protection' ? 'rate>0.10' : 'rate>0.95';
 
 export const options = {
   vus,
@@ -19,10 +32,36 @@ export const options = {
   thresholds: {
     http_req_failed: [`rate<${errorRateThreshold}`],
     http_req_duration: [`p(95)<${p95Threshold}`],
-    checks: ['rate>0.95'],
+    checks: [successThreshold],
   },
   summaryTrendStats: ['avg', 'min', 'med', 'p(90)', 'p(95)', 'max'],
 };
+
+function registerStatus(status) {
+  if (status >= 200 && status < 300) {
+    httpStatus2xx.add(1);
+  }
+  if (status >= 400 && status < 500) {
+    httpStatus4xx.add(1);
+  }
+  if (status >= 500) {
+    httpStatus5xx.add(1);
+    httpStatus5xxExact.add(1);
+  }
+
+  if (status === 200) {
+    httpStatus200.add(1);
+  }
+  if (status === 401) {
+    httpStatus401.add(1);
+  }
+  if (status === 403) {
+    httpStatus403.add(1);
+  }
+  if (status === 429) {
+    httpStatus429.add(1);
+  }
+}
 
 function createJwtToken(secret) {
   const now = Math.floor(Date.now() / 1000);
@@ -100,9 +139,18 @@ export default function (data) {
     },
   });
 
+  registerStatus(response.status);
+
+  const isProtectionAccepted = mode === 'protection' && (response.status === 200 || response.status === 429);
+  const isCapacityAccepted = response.status === 200;
+  const isAcceptedStatus = mode === 'protection' ? isProtectionAccepted : isCapacityAccepted;
+
   check(response, {
-    'payments returns 200': (res) => res.status === 200,
+    'payments status accepted by mode': () => isAcceptedStatus,
     'payments response is successful': (res) => {
+      if (mode === 'protection' && res.status === 429) {
+        return true;
+      }
       const body = res.json();
       return Boolean(body && body.success === true);
     },

@@ -1,5 +1,7 @@
 param(
     [string]$Scenario = "admin-payments-baseline.js",
+    [ValidateSet("capacity", "protection")]
+    [string]$Mode = "capacity",
     [string]$BaseUrl = "http://host.docker.internal:8080",
     [string]$AdminEmail = "admin@travel-plan.com",
     [string]$AdminPassword = "admin123",
@@ -31,6 +33,7 @@ docker run --rm `
     -e ADMIN_EMAIL="$AdminEmail" `
     -e ADMIN_PASSWORD="$AdminPassword" `
     -e JWT_SECRET="$jwtSecret" `
+    -e K6_MODE="$Mode" `
     -e K6_VUS="$Vus" `
     -e K6_DURATION="$Duration" `
     -e K6_P95_THRESHOLD="$P95Threshold" `
@@ -40,7 +43,7 @@ docker run --rm `
 & "$PSScriptRoot\render-load-report.ps1" `
     -SummaryJsonPath (Join-Path $projectRoot "docs\reports\load\$timestamp-baseline-summary.json") `
     -ReportPath $reportPath `
-    -ScenarioName "baseline-admin-payments" `
+    -ScenarioName "baseline-admin-payments-$Mode" `
     -BaseUrl $BaseUrl `
     -P95ThresholdMs ([double]$P95Threshold) `
     -ErrorRateThreshold ([double]$ErrorRateThreshold)

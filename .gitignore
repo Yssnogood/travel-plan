@@ -83,6 +83,11 @@ test-output/
 surefire-reports/
 failsafe-reports/
 
+# Generated load/failover artifacts (can be force-added when needed for audit evidence)
+docs/reports/load/*-summary.json
+docs/reports/load/*-report.md
+docs/reports/load/*-metadata.json
+
 # Generated sources
 generated-sources/
 generated-test-sources/

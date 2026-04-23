@@ -3,6 +3,7 @@
 set -euo pipefail
 
 SCENARIO=${1:-admin-payments-baseline.js}
+K6_MODE=${K6_MODE:-capacity}
 BASE_URL=${BASE_URL:-http://host.docker.internal:8080}
 ADMIN_EMAIL=${ADMIN_EMAIL:-admin@travel-plan.com}
 ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
@@ -24,6 +25,7 @@ docker run --rm \
   -e ADMIN_EMAIL="$ADMIN_EMAIL" \
   -e ADMIN_PASSWORD="$ADMIN_PASSWORD" \
   -e JWT_SECRET="$JWT_SECRET" \
+  -e K6_MODE="$K6_MODE" \
   -e K6_VUS="$K6_VUS" \
   -e K6_DURATION="$K6_DURATION" \
   -e K6_P95_THRESHOLD="$K6_P95_THRESHOLD" \
