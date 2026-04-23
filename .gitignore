@@ -88,6 +88,9 @@ docs/reports/load/*-summary.json
 docs/reports/load/*-report.md
 docs/reports/load/*-metadata.json
 
+# Generated Ansible execution artifacts (archived by CI)
+artifacts/ansible/
+
 # Generated sources
 generated-sources/
 generated-test-sources/

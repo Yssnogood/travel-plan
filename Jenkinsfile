@@ -1,5 +1,10 @@
 pipeline {
     agent any
+
+    parameters {
+        booleanParam(name: 'RUN_ANSIBLE_EVIDENCE', defaultValue: false, description: 'Run Ansible evidence workflow (double-run idempotence)')
+        string(name: 'ANSIBLE_ENVIRONMENT', defaultValue: 'staging', description: 'Ansible environment variable value')
+    }
     
     options {
         buildDiscarder(logRotator(numToKeepStr: '10'))
@@ -224,9 +229,35 @@ pipeline {
                 }
             }
         }
+
+        stage('Ansible Evidence') {
+            when {
+                expression { return params.RUN_ANSIBLE_EVIDENCE }
+            }
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh '''
+                            chmod +x scripts/run-ansible-evidence.sh
+                            INVENTORY=ansible/inventory/hosts.yml \
+                            PLAYBOOK=ansible/playbooks/deploy-all.yml \
+                            ENVIRONMENT=${ANSIBLE_ENVIRONMENT} \
+                            scripts/run-ansible-evidence.sh
+                        '''
+                    } else {
+                        bat '''
+                            powershell -ExecutionPolicy Bypass -File scripts\\run-ansible-evidence.ps1 -Environment "%ANSIBLE_ENVIRONMENT%"
+                        '''
+                    }
+                }
+            }
+        }
     }
     
     post {
+        always {
+            archiveArtifacts artifacts: 'artifacts/ansible/**/*', allowEmptyArchive: true
+        }
         success {
             script {
                 def shortCommit = env.GIT_COMMIT_SHORT ?: 'n/a'
