@@ -1,0 +1,154 @@
+{
+    "metrics": {
+        "vus_max": {
+            "value": 1,
+            "min": 1,
+            "max": 1
+        },
+        "data_sent": {
+            "count": 2775,
+            "rate": 538.1868798783495
+        },
+        "iteration_duration": {
+            "min": 0.090832,
+            "med": 1024.0691594999998,
+            "p(90)": 1043.1684745,
+            "p(95)": 1051.55522225,
+            "max": 1059.94197,
+            "avg": 859.2542618333333
+        },
+        "data_received": {
+            "count": 6409,
+            "rate": 1242.9692659965197
+        },
+        "vus": {
+            "value": 1,
+            "min": 1,
+            "max": 1
+        },
+        "http_req_tls_handshaking": {
+            "min": 0,
+            "med": 0,
+            "p(90)": 0,
+            "p(95)": 0,
+            "max": 0,
+            "avg": 0
+        },
+        "http_req_connecting": {
+            "avg": 0.2361942,
+            "min": 0,
+            "med": 0,
+            "p(90)": 0.7085826000000001,
+            "p(95)": 0.9447767999999998,
+            "max": 1.180971
+        },
+        "checks": {
+            "passes": 10,
+            "fails": 0,
+            "thresholds": {
+                "rate>0.95": false
+            },
+            "value": 1
+        },
+        "http_req_receiving": {
+            "p(95)": 2.1243771999999996,
+            "max": 2.259251,
+            "avg": 1.4355179999999998,
+            "min": 0.652854,
+            "med": 1.347862,
+            "p(90)": 1.9895034
+        },
+        "iterations": {
+            "count": 5,
+            "rate": 0.9697060898709
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 5,
+            "thresholds": {
+                "rate<0.05": false
+            },
+            "value": 0
+        },
+        "http_req_blocked": {
+            "med": 0.006803,
+            "p(90)": 1.6008108000000003,
+            "p(95)": 2.1319223999999997,
+            "max": 2.663034,
+            "avg": 0.5373912000000001,
+            "min": 0.0043
+        },
+        "http_reqs": {
+            "count": 5,
+            "rate": 0.9697060898709
+        },
+        "http_req_sending": {
+            "p(90)": 0.09717020000000001,
+            "p(95)": 0.11467759999999999,
+            "max": 0.132185,
+            "avg": 0.0515848,
+            "min": 0.016281,
+            "med": 0.039922
+        },
+        "http_req_duration": {
+            "min": 20.099143,
+            "med": 23.942335,
+            "p(90)": 43.844054400000005,
+            "p(95)": 49.9046252,
+            "max": 55.965196,
+            "avg": 29.5238028,
+            "thresholds": {
+                "p(95)<800": false
+            }
+        },
+        "http_req_waiting": {
+            "p(90)": 41.8661412,
+            "p(95)": 47.71995059999999,
+            "max": 53.57376,
+            "avg": 28.036700000000003,
+            "min": 19.401641,
+            "med": 22.317531
+        },
+        "http_req_duration{expected_response:true}": {
+            "p(95)": 49.9046252,
+            "max": 55.965196,
+            "avg": 29.5238028,
+            "min": 20.099143,
+            "med": 23.942335,
+            "p(90)": 43.844054400000005
+        }
+    },
+    "setup_data": {
+        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiYWRtaW5AdHJhdmVsLXBsYW4uY29tIiwiZmlyc3ROYW1lIjoiU3lzdGVtIiwibGFzdE5hbWUiOiJBZG1pbiIsInJvbGUiOiJBRE1JTiIsInBlcm1pc3Npb25zIjpbImFkbWluOmFjY2VzcyIsInBheW1lbnRzOnJlYWQiLCJwYXltZW50czp3cml0ZSJdLCJzdWIiOiJhZG1pbkB0cmF2ZWwtcGxhbi5jb20iLCJpYXQiOjE3NzY5NDk4NjksImV4cCI6MTc3Njk1MzQ2OX0.w3sYKXobTivVaOqtCDkozKZHo0jEeTlbO9lh8rb4Oy0"
+    },
+    "root_group": {
+        "checks": {
+            "payments returns 200": {
+                "passes": 5,
+                "fails": 0,
+                "name": "payments returns 200",
+                "path": "::payments returns 200",
+                "id": "f44ed0d999d40e6503f1fec61039de76"
+            },
+            "payments response is successful": {
+                "fails": 0,
+                "name": "payments response is successful",
+                "path": "::payments response is successful",
+                "id": "8e872eb6e25582e18b8c9991b44556cb",
+                "passes": 5
+            }
+        },
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {
+            "setup": {
+                "name": "setup",
+                "path": "::setup",
+                "id": "5c0f8025f7e0b6654089e5b00e950f1a",
+                "groups": {},
+                "checks": {}
+            }
+        }
+    }
+}

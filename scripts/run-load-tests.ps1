@@ -13,6 +13,7 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $scenarioPath = "/workspace/tests/load/k6/$Scenario"
 $summaryPath = "/workspace/docs/reports/load/$timestamp-baseline-summary.json"
+$reportPath = Join-Path $projectRoot "docs\reports\load\$timestamp-baseline-report.md"
 $envFile = Join-Path $projectRoot ".env"
 $jwtSecret = $null
 
@@ -36,4 +37,13 @@ docker run --rm `
     -e K6_ERROR_RATE_THRESHOLD="$ErrorRateThreshold" `
     grafana/k6:0.49.0 run --summary-export "$summaryPath" "$scenarioPath"
 
+& "$PSScriptRoot\render-load-report.ps1" `
+    -SummaryJsonPath (Join-Path $projectRoot "docs\reports\load\$timestamp-baseline-summary.json") `
+    -ReportPath $reportPath `
+    -ScenarioName "baseline-admin-payments" `
+    -BaseUrl $BaseUrl `
+    -P95ThresholdMs ([double]$P95Threshold) `
+    -ErrorRateThreshold ([double]$ErrorRateThreshold)
+
 Write-Host "Load test summary written to docs/reports/load/$timestamp-baseline-summary.json"
+Write-Host "Load test report written to docs/reports/load/$timestamp-baseline-report.md"
