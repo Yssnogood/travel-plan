@@ -39,26 +39,68 @@ This project implements a **microservices architecture** for a Travel Management
 - Node.js 18+
 - Maven 3.8+
 
-### Development Setup
+### 1. Environment Configuration
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd travel-plan
+# Copy the example environment file and fill in your values
+cp .env.example .env
+```
 
-# Start infrastructure services
+Edit `.env` with your credentials (JWT secret, DB passwords, Stripe/PayPal keys, SMTP settings).  
+The application reads this file automatically via Docker Compose.
+
+### 2. Start Infrastructure
+
+```bash
+# Core infrastructure (PostgreSQL, Neo4j, Redis, RabbitMQ, Vault, Kong)
 docker-compose -f docker/docker-compose.infra.yml up -d
 
-# Start all microservices
-docker-compose -f docker/docker-compose.services.yml up -d
+# Monitoring stack (Prometheus, Grafana, Elasticsearch, Kibana, Jaeger)
+docker-compose -f docker/docker-compose.monitoring.yml up -d
+```
 
-# Start admin dashboard
+### 3. Seed Initial Data
+
+```bash
+# Create the default ADMIN user (required before first login)
+# Windows:
+powershell -ExecutionPolicy Bypass -File scripts\ensure-admin.ps1
+
+# Seed demo users and travel data (optional)
+powershell -ExecutionPolicy Bypass -File scripts\seed-users.ps1
+```
+
+### 4. Start Microservices
+
+```bash
+docker-compose -f docker/docker-compose.services.yml up -d
+```
+
+### 5. Start Admin Dashboard
+
+```bash
 cd admin-dashboard
 npm install
 npm run dev
 ```
 
-### Using Ansible
+The dashboard is available at `http://localhost:5173` (Vite default).
+
+### 6. Verify — Smoke Tests
+
+```bash
+# Linux/macOS:
+bash scripts/smoke-tests.sh
+
+# Windows:
+powershell -ExecutionPolicy Bypass -File scripts\smoke-tests.ps1
+```
+
+Expected output: all health and reachability checks `OK`.
+
+---
+
+### Using Ansible (production deployment)
 
 ```bash
 # Deploy entire stack
@@ -68,6 +110,8 @@ ansible-playbook -i inventory/hosts.yml playbooks/deploy-all.yml
 # Deploy specific service
 ansible-playbook -i inventory/hosts.yml playbooks/deploy-service.yml -e "service=user-service"
 ```
+
+> Ansible idempotence evidence (dual-run + report): see [docs/ansible-evidence.md](docs/ansible-evidence.md) (available after merging `feat/ansible-audit-evidence`).
 
 ## 📁 Project Structure
 
@@ -130,16 +174,53 @@ Notes:
 
 ## 🧪 Testing
 
+### Unit & Integration Tests
+
 ```bash
-# Run all tests
+# Run all unit tests
 ./mvnw test
 
-# Run with coverage
+# Run with coverage report (output: target/site/jacoco/)
 ./mvnw test jacoco:report
 
 # Integration tests
 ./mvnw verify -P integration-tests
 ```
+
+### Smoke Tests
+
+```bash
+# Linux/macOS:
+bash scripts/smoke-tests.sh
+
+# Windows:
+powershell -ExecutionPolicy Bypass -File scripts\smoke-tests.ps1 -Environment local
+```
+
+### Load Tests (k6 required)
+
+```bash
+# Linux/macOS — capacity mode (200 OK expected):
+bash scripts/run-load-tests.sh --mode capacity --vus 50 --duration 60s
+
+# Windows:
+powershell -ExecutionPolicy Bypass -File scripts\run-load-tests.ps1 -Mode capacity -Vus 50 -Duration 60s
+
+# Protection mode (200 + 429 accepted — rate-limiting validation):
+powershell -ExecutionPolicy Bypass -File scripts\run-load-tests.ps1 -Mode protection -Vus 200 -Duration 30s
+```
+
+Reports are written to `docs/reports/load/`. See [docs/load-testing.md](docs/load-testing.md) for full usage.
+
+### Failover Tests
+
+```bash
+# Simulate payment-service outage and measure recovery time (Windows):
+powershell -ExecutionPolicy Bypass -File scripts\run-failover-tests.ps1 `
+  -WarmupSeconds 30 -OutageSeconds 60 -PostRecoverySeconds 30 -Vus 10
+```
+
+Reports are written to `docs/reports/load/`.
 
 ## 📝 API Documentation
 
